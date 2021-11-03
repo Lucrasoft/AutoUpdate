@@ -8,6 +8,9 @@ env:
 jobs: 
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./AutoUpdate
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
@@ -16,26 +19,20 @@ jobs:
         dotnet-version: '5.0'
         
     - if: ${{ contains(github.ref, 'main') }}
-      working-directory: ./AutoUpdate
       run: |
         Write-Output "::set-env name=VERSION::${{env.MAJOR}}.${{env.MINOR}}.${{github.run_number}}"
         Write-Output "::set-env name=PRERELEASE::false"
     - if: ${{ !contains(github.ref, 'main') }}
-      working-directory: ./AutoUpdate
       run: |
         Write-Output "::set-env name=VERSION::${{env.MAJOR}}.${{env.MINOR}}.${{github.run_number}}-beta"
         Write-Output "::set-env name=PRERELEASE::true"
     - name: Restore
-      working-directory: ./AutoUpdate
       run: dotnet restore
     - name: Build
-      working-directory: ./AutoUpdate
       run: dotnet build -c Release --no-restore
     - name: Pack
-      working-directory: ./AutoUpdate
       run: dotnet pack -c Release -p:PackageVersion=${{env.VERSION}}
-      
     - name: Release Nuget
-      working-directory: ./AutoUpdate
       run: dotnet nuget push **/Bitfox*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols true
-
+      
+      
