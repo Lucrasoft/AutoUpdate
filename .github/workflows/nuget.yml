@@ -35,4 +35,3 @@ jobs:
     - name: Release Nuget
       run: dotnet nuget push **/AutoUpdate*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols true
       
-      
