@@ -9,6 +9,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Lucrasoft/AutoUpdate</RepositoryUrl>
     <Authors>Lucrasoft Solutions BV</Authors>
+    <Product>Lucrasoft.AutoUpdate</Product>
+    <PackageId>Lucrasoft.AutoUpdate</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
