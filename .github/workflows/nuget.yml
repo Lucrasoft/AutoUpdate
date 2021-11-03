@@ -1,0 +1,35 @@
+name: CI/CD .NET CORE
+on: push
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  MAJOR: 1
+  MINOR: 0
+
+jobs: 
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with: 
+        dotnet-version: '5.0'
+        
+    - if: ${{ contains(github.ref, 'main') }}
+      run: |
+        Write-Output "::set-env name=VERSION::${{env.MAJOR}}.${{env.MINOR}}.${{github.run_number}}"
+        Write-Output "::set-env name=PRERELEASE::false"
+    - if: ${{ !contains(github.ref, 'main') }}
+      run: |
+        Write-Output "::set-env name=VERSION::${{env.MAJOR}}.${{env.MINOR}}.${{github.run_number}}-beta"
+        Write-Output "::set-env name=PRERELEASE::true"
+    - name: Restore
+      run: dotnet restore
+    - name: Build
+      run: dotnet build -c Release --no-restore
+    - name: Pack
+      run: dotnet pack -c Release -p:PackageVersion=${{env.VERSION}}
+      
+    - name: Release Nuget
+      run: dotnet nuget push **/Bitfox*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols true
+
