@@ -1,5 +1,6 @@
 ﻿using AutoUpdate.Package;
 using AutoUpdate.Providers;
+using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,7 +23,6 @@ namespace AutoUpdate
             //default version providers..
             this.local = new LocalAssemblyVersionProvider();
         }
-
 
         /// <summary>
         /// Manually supply a local version
@@ -110,7 +110,7 @@ namespace AutoUpdate
         /// </summary>
         /// <param name="zipContents"></param>
         /// <returns></returns>
-        public AutoUpdateBuilder AddPackage( byte[] zipContents)
+        public AutoUpdateBuilder AddPackage(byte[] zipContents)
         {
             package = new CustomPackage(zipContents);
             return this;
@@ -128,25 +128,70 @@ namespace AutoUpdate
         }
 
 
+        
+
+
+        ///// <summary>
+        ///// Provide the url of a github repository.
+        ///// </summary>
+        ///// <param name="url">Github repo url.</param>
+        ///// <returns></returns>
+        //public AutoUpdateBuilder AddBlobStorage(Uri url)
+        //{
+        //    this.remote = new GithubVersionProvider(url);
+        //
+        //
+        //    package = new DownloadPackage(UrlFunction);
+        //    //package = new GithubPackage(url, remote);
+        //
+        //    return this;
+        //}
+
+
+        /// <summary>
+        /// Provide the url of a github repository.
+        /// </summary>
+        /// <param name="url">Github repo url.</param>
+        /// <returns></returns>
+        public AutoUpdateBuilder AddGithubRelease(Uri url)
+        {
+            remote = new GithubVersionProvider(url);
+
+            package = new DownloadPackage(
+                (v) =>
+                {
+                    var version = $"{v.Major}.{v.Minor}";
+                    
+                    if (v.Build != -1)
+                    {
+                        version += $".{v.Build}";
+                    }
+
+                    if (v.Revision != -1)
+                    {
+                        version += $".{v.Revision}";
+                    }
+
+                    return new Uri($"{url.AbsoluteUri}/releases/download/{version}/release_{version}.zip");
+                }
+            );
+
+            return this;
+        }
+
+
         /// <summary>
         /// Build the IUpdater instance.
         /// </summary>
         /// <returns></returns>
         public IUpdater Build()
         {
-
-            if (remote==null)
-            {
-                throw new ArgumentNullException("You must specifiy a remote version provider .");
-            }
-
-            if (package==null)
+            if (remote==null || package == null)
             {
                 throw new ArgumentNullException("You must specifiy a remote version provider .");
             }
 
             return new Updater(local, remote, package);
-
         }
 
     }

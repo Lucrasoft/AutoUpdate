@@ -24,9 +24,18 @@ namespace AutoUpdate.Providers
 
             if (format == VersionFormat.AutoDetect)
             {
-                format = VersionFormat.Text;
-                if (filename.EndsWith(".json")) { format = VersionFormat.Json; }
-                if (filename.EndsWith(".xml")) { format = VersionFormat.Xml; }
+                if (filename.EndsWith(".json")) 
+                { 
+                    format = VersionFormat.Json; 
+                }
+                else if (filename.EndsWith(".xml")) 
+                { 
+                    format = VersionFormat.Xml; 
+                }
+                else
+                {
+                    format = VersionFormat.Text;
+                }
             }
 
             var reader = format.GetReader();

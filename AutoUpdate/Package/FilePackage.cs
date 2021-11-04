@@ -7,7 +7,6 @@ namespace AutoUpdate.Package
 {
     class FilePackage : IPackage
     {
-
         private readonly string filename;
         private Func<Version, string> filenameFunc;
 
@@ -33,7 +32,14 @@ namespace AutoUpdate.Package
             //return Task.FromResult(bytes);
             using (var fsFile = System.IO.File.OpenRead(fname))
             {
-                return Task.FromResult(PackageUtils.FillFromRemoteStream(fsFile, fsFile.Length, currentOperationTotalPercentDone, "reading").ToArray());
+                System.IO.MemoryStream stream = PackageUtils.FillFromRemoteStream(
+                    fsFile, 
+                    fsFile.Length, 
+                    currentOperationTotalPercentDone, 
+                    "reading"
+                );
+
+                return Task.FromResult(stream.ToArray());
             }
         }
     }
