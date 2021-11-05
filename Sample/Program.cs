@@ -6,7 +6,7 @@ namespace Sample
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
@@ -14,17 +14,22 @@ namespace Sample
                 .AddGithubRelease(new Uri("https://github.com/niektuytel/HelloRelease"))
                 .Build();
 
-            var updatable = au.UpdateAvailableAsync(null);
-            updatable.Wait();
-
-            if (updatable.Result)
+            if (await au.UpdateAvailableAsync(null))
             {
-                
+                Console.WriteLine("AutoUpdate: found new version. Updating...");
+                await au.Update(null);
+                //au.Restart(null);
+            }
+            else
+            {
+                Console.WriteLine("AutoUpdate: no update found.");
             }
 
 
-
-
         }
+
+
     }
+
+
 }

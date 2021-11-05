@@ -4,6 +4,7 @@ using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AutoUpdate
 {
@@ -155,24 +156,30 @@ namespace AutoUpdate
         /// <returns></returns>
         public AutoUpdateBuilder AddGithubRelease(Uri url)
         {
-            remote = new GithubVersionProvider(url);
+            var invalid = !url.Host.Contains("github");
+            var urlpaths = url.AbsolutePath.Split("/")[1..];
 
-            package = new DownloadPackage(
-                (v) =>
+            if (invalid || urlpaths.Length != 2)
+            {
+                throw new ArgumentException(
+                    $"invalid: {url}. (hint: https://github.com/user/repo)"
+                );
+            }
+
+            var owner = urlpaths[0];
+            var repo = urlpaths[1];
+            remote = new GithubVersionProvider(owner, repo);
+
+            package = new DownloadPackage((v) =>
                 {
-                    var version = $"{v.Major}.{v.Minor}";
-                    
-                    if (v.Build != -1)
-                    {
-                        version += $".{v.Build}";
-                    }
+                    var client = new GitHubClient(new ProductHeaderValue(repo));
+                    var releases = client.Repository.Release.GetAll(owner, repo);
 
-                    if (v.Revision != -1)
-                    {
-                        version += $".{v.Revision}";
-                    }
+                    releases.Wait();
+                    var release = releases.Result[0];
+                    var packageUrl = release.Assets[0].BrowserDownloadUrl;
 
-                    return new Uri($"{url.AbsoluteUri}/releases/download/{version}/release_{version}.zip");
+                    return new Uri(packageUrl);
                 }
             );
 

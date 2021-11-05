@@ -10,31 +10,22 @@ namespace AutoUpdate.Providers
 {
     public class GithubVersionProvider : IVersionProvider
     {
-        //private readonly Uri remoteurl;
-        private readonly string[] urlpaths;
+        private readonly string owner;
+        private readonly string repo;
 
-        public GithubVersionProvider(Uri url)
+        public GithubVersionProvider(string owner, string repo)
         {
-            var invalid = !url.Host.Contains("github");
-            urlpaths = url.AbsolutePath.Split("/")[1..];
-
-            if (invalid || urlpaths.Length != 2)
-            {
-                throw new ArgumentException(
-                    $"invalid: {url}. (hint: https://github.com/user/repo)"
-                );
-            }
-
-            //this.remoteurl = url;
+            this.owner = owner;
+            this.repo = repo;
         }
 
         public async Task<Version> GetVersionAsync()
         {
-            var client = new GitHubClient(new ProductHeaderValue(urlpaths[1]));
-            var releases = await client.Repository.Release.GetAll(urlpaths[0], urlpaths[1]);
-            var latest = releases[0];
+            var client = new GitHubClient(new ProductHeaderValue(repo));
+            var releases = await client.Repository.Release.GetAll(owner, repo);
+            var release = releases[0];
 
-            return new Version(latest.TagName);
+            return new Version(release.TagName);
         }
     
     }
