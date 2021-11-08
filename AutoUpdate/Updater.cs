@@ -8,24 +8,33 @@ using System.IO;
 using System.IO.Compression;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using AutoUpdate.Models;
 
 namespace AutoUpdate
 {
     internal class Updater : IUpdater
     {
-   
         private readonly IVersionProvider localProvider;
         private readonly IVersionProvider remoteProvider;
         private readonly IPackage package;
 
         //TODO include logger from DI
-        private readonly ILogger<Updater> logger; 
+        private readonly ILogger<Updater> logger;
+
+
+        public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
+
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package)
         {
             this.localProvider = local;
             this.remoteProvider = remote;
             this.package = package;
+        }
+
+        public async Task<bool> UpdateAvailableAsync()
+        {
+            return await UpdateAvailableAsync(null);
         }
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue)
@@ -41,13 +50,14 @@ namespace AutoUpdate
             return false;
         }
 
-        public async Task Update(Action<string, int> currentOperationTotalPercentDone)
+
+        public async Task Update()
         {
-            try { currentOperationTotalPercentDone?.Invoke("downloading", -1); }
+            try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
             catch (Exception) { }
 
             var remoteVersion = await remoteProvider.GetVersionAsync();
-            var package = await this.package.GetContentAsync(remoteVersion, currentOperationTotalPercentDone);
+            var package = await this.package.GetContentAsync(remoteVersion, OnDownloadProgress);
 
             //SKIP : unpack package in temp location is NOT necessaary, we can extract from memory! 
             //var path = System.IO.Path.GetTempPath();
@@ -60,10 +70,25 @@ namespace AutoUpdate
             var exePath = Path.GetDirectoryName(exeFile);
             var archive = new ZipArchive(new MemoryStream(package));
 
-            PackageUtils.ExtractArchive(archive, exePath, currentOperationTotalPercentDone);
+            PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
         }
 
-        public void Start(Func<List<string>> extraArguments)
+        public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
+        {
+            OnDownloadProgress = onDownloadProgress;
+            await Update();
+        }
+
+
+        public void Restart()
+        {
+            Restart(null);
+        }
+
+        //3b) het restart proces moet goed getest worden.. Het is niet heel eenvoudig, 
+        //    want je moet het huidige proces afbreken + nieuwe starten, en alle commandline arguments moeten doorgeven worden , 
+        //    maar vooral moet ook de std in / std out goed blijven werken. Dat moet even goed getest worden.
+        public void Restart(Func<List<string>> extraArguments)
         {
             //TODO : loop prevention!! but how?!
             // -> what loop? when a new executable is introduced with an update? or..?
@@ -105,6 +130,7 @@ namespace AutoUpdate
             //Environment.Exit(0);  
         }
 
+
         public void Publish()
         {
             //generate zip archive from current location...?
@@ -133,5 +159,8 @@ namespace AutoUpdate
         {
             return remoteProvider.GetVersionAsync();
         }
+
     }
+
+
 }

@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 using System.IO.Compression;
+using AutoUpdate.Models;
 
 namespace AutoUpdate
 {
     public class PackageUtils
     {
-        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(HttpClient client, Uri url, Action<string, int> currentOperationTotalPercentDone, string operationText = "downloading")
+        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(HttpClient client, Uri url, EventHandler<DownloadProgressEventArgs> handler, string operationText = "downloading")
         {
 
             using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
@@ -21,18 +22,18 @@ namespace AutoUpdate
 
                 using (Stream remoteStream = await response.Content.ReadAsStreamAsync())
                 {
-                    return FillFromRemoteStream(remoteStream, streamLength, currentOperationTotalPercentDone, operationText);
+                    return FillFromRemoteStream(remoteStream, streamLength, handler, operationText);
                 }
             }
         }
 
-        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, Action<string, int> currentOperationTotalPercentDone, string operationText)
+        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, EventHandler<DownloadProgressEventArgs> handler, string operationText)
         {
-            MemoryStream returnStream = new MemoryStream();
+            var returnStream = new MemoryStream();
 
             //buffer, download, calculate percentage.
             int lastPercentage = -1;
-            if (streamLength > 0) currentOperationTotalPercentDone?.Invoke(operationText, lastPercentage);
+            if (streamLength > 0) handler?.Invoke(handler.Target, new(operationText, lastPercentage));
 
             byte[] buffer = new byte[65536]; // read in chunks of 64KB
             int bytesRead;
@@ -41,26 +42,27 @@ namespace AutoUpdate
                 //do something with data in buffer, up to the size indicated by bytesRead
                 returnStream.Write(buffer, 0, bytesRead);
 
-                if (currentOperationTotalPercentDone != null && streamLength > 0)
+                if (handler != null && streamLength > 0)
                 {
                     int completePercentage = (int)Math.Round(((double)returnStream.Length * 100) / streamLength, 0, MidpointRounding.AwayFromZero);
                     if (completePercentage != lastPercentage)
                     {
                         lastPercentage = completePercentage;
-                        currentOperationTotalPercentDone(operationText, completePercentage);
+                        handler(handler.Target, new(operationText, completePercentage));
                     }
-                    
                 }
             }
+
             return returnStream;
         }
 
-        public static void ExtractArchive(ZipArchive archive, string installationPath, Action<string, int> currentOperationTotalPercentDone, string operationText = "extracting")
+        public static void ExtractArchive(ZipArchive archive, string installationPath, EventHandler<DownloadProgressEventArgs> handler, string operationText="extracting")
         {
             int archiveEntryCount = archive.Entries.Count;
             int unpackedEntryCount = 0;
             int lastPercentage = -1;
-            currentOperationTotalPercentDone?.Invoke(operationText, lastPercentage);
+
+            handler.Invoke(handler.Target, new(operationText, lastPercentage));
 
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
@@ -87,17 +89,22 @@ namespace AutoUpdate
                 finally
                 {
                     unpackedEntryCount += 1;
-                    if (currentOperationTotalPercentDone != null)
+
+                    if(handler != null)
                     {
                         int completePercentage = (int)Math.Round(((double)unpackedEntryCount * 100) / archiveEntryCount, 0, MidpointRounding.AwayFromZero);
                         if (completePercentage != lastPercentage)
                         {
                             lastPercentage = completePercentage;
-                            currentOperationTotalPercentDone(operationText, completePercentage);
+                            handler.Invoke(handler.Target, new(operationText, completePercentage));
                         }
                     }
                 }
             }
+
+
         }
+
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoUpdate.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace AutoUpdate.Package
             this.bytes = bytes;
         }
 
-        public Task<byte[]> GetContentAsync(Version version, Action<string, int> currentOperationTotalPercentDone)
+        public Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler)
         {
             return Task.FromResult(this.bytes);
         }
