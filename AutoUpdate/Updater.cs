@@ -94,12 +94,13 @@ namespace AutoUpdate
             // -> what loop? when a new executable is introduced with an update? or..?
 
             //starts the (hopefully correcly updated) process using the original executable name startup arguments.
-            String[] arguments = Environment.GetCommandLineArgs();
+            var arguments = Environment.GetCommandLineArgs();
             var lstArgs = new List<string>();
             for (int i = 1; i < arguments.Length; i++) //1st argument is always the executable path (see AppCore from MSDN reference).
             {
                 lstArgs.Add(arguments[i]);
             }
+
             var extraArgs = extraArguments?.Invoke();
             if (extraArgs != null)
             {
