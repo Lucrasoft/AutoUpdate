@@ -19,12 +19,18 @@ namespace AutoUpdate
         private readonly IVersionProvider localProvider;
         private readonly IVersionProvider remoteProvider;
         private readonly IPackage package;
+
+        private readonly string exeFile;
+        private readonly string exePath;
         private readonly string jsonFilename;
+        private List<string> currFilenames = new();
+        private List<string> prevFilenames = new();
 
         //TODO include logger from DI
         private readonly ILogger<Updater> logger;
 
         public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
+
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package)
         {
@@ -32,19 +38,19 @@ namespace AutoUpdate
             this.remoteProvider = remote;
             this.package = package;
 
-            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
-            var exePath = Path.GetDirectoryName(exeFile);
+            //Huidige locatie van de .exe file bepaald de bestemming
+            exeFile = Process.GetCurrentProcess().MainModule.FileName;
+            exePath = Path.GetDirectoryName(exeFile);
             jsonFilename = $"{exePath}\\prev_filenames.json";
 
-            RemoveDuplicatedFiles(exePath);
+            RemoveDuplicatedFiles();
         }
 
-        private void RemoveDuplicatedFiles(string exePath)
+        private void RemoveDuplicatedFiles()
         {
             // get filenames
             var files = Directory.GetFiles(exePath);
-            var currFilenames = new List<string>(files);
-            var prevFilenames = new List<string>();
+            currFilenames = new List<string>(files);
 
             if (File.Exists(jsonFilename))
             {
@@ -68,8 +74,8 @@ namespace AutoUpdate
                     }
 
                     Console.WriteLine(
-                         $"(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
-                         $"[INFO] Removed: [\n\t{string.Join(",\n\t ", duplicates)}\n\t]"
+                         $"\n(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
+                         $"[INFO] Removed: [\n\t{string.Join(",\n\t ", duplicates)}\n]"
                     );
                 }
 
@@ -79,15 +85,11 @@ namespace AutoUpdate
         }
 
 
-        public async Task<bool> UpdateAvailableAsync()
-        {
-            return await UpdateAvailableAsync(null);
-        }
-
+        public async Task<bool> UpdateAvailableAsync() => await UpdateAvailableAsync(null);
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue)
         {
-            var localVersion = await localProvider.GetVersionAsync();
-            var remoteVersion = await remoteProvider.GetVersionAsync();
+            var localVersion = await GetLocalVersion();
+            var remoteVersion = await GetRemoteVersion();
 
             if (remoteVersion > localVersion)
             {
@@ -104,8 +106,11 @@ namespace AutoUpdate
         }
 
 
-        public async Task Update()
+
+        public async Task Update() => await Update(null);
+        public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
         {
+            OnDownloadProgress = onDownloadProgress;
             try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
             catch (Exception) { }
 
@@ -119,25 +124,13 @@ namespace AutoUpdate
             //TODO : voor nu doen we INPLACE ipv SIDE bY SIDE.
 
             //Huidige locatie van de .exe file bepaald de bestemming
-            var exeFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-            var exePath = Path.GetDirectoryName(exeFile);
             var archive = new ZipArchive(new MemoryStream(package));
 
             PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
         }
 
-        public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
-        {
-            OnDownloadProgress = onDownloadProgress;
-            await Update();
-        }
 
-
-        public void Restart()
-        {
-            Restart(null);
-        }
-
+        public void Restart() => Restart(null);
         public void Restart(Func<List<string>> extraArguments)
         {
             //starts the (hopefully correcly updated) process using the original executable name startup arguments.
@@ -161,12 +154,12 @@ namespace AutoUpdate
             }
 
             #region restart EXE
-            var exeFile = GetExecutableFilename();
-            var exePath = Path.GetDirectoryName(exeFile);
+            var file = GetExecutableFilename();
+            var path = Path.GetDirectoryName(file);
             var psi = new ProcessStartInfo
             {
-                FileName = exeFile,
-                WorkingDirectory = exePath
+                FileName = file,
+                WorkingDirectory = path
             };
 
             //add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
@@ -182,17 +175,19 @@ namespace AutoUpdate
             //Environment.Exit(0);
         }
 
-        private static string GetExecutableFilename()
+        private string GetExecutableFilename()
         {
-            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
-            var exePath = Path.GetDirectoryName(exeFile);
             var exes = Directory.GetFiles(exePath).Where(a => a.EndsWith(".exe")).ToList();
 
-            if (exes.Count > 1)
+            if (exes.Count > 1 || !exes.Any())
             {
+                var files = currFilenames.Except(prevFilenames).ToList();
+                exes = files.Where(a => a.EndsWith(".exe")).ToList();
+                var file = exes.Count == 0 ? exeFile : exes.First();
+
                 Console.WriteLine(
                     $"(AutoUpdate::Updater::Restart(Func<List<string>>))\n" +
-                    $"[WARNING] There are more .exe Files, restart on {exeFile}\n"
+                    $"[WARNING] There are more .exe Files, restart on {file}\n"
                 );
 
                 return exeFile;
@@ -206,10 +201,6 @@ namespace AutoUpdate
         {
             //generate zip archive from current location...?
 
-            //Huidige locatie van de .exe file bepaald de bestemming
-            var exeFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-            var exePath = Path.GetDirectoryName(exeFile);
-
             ZipFile.CreateFromDirectory(exePath, "c:\\temp\\test.zip");
 
             //var zipStream = new MemoryStream();
@@ -221,16 +212,10 @@ namespace AutoUpdate
             //}
         }
 
-        public Task<Version> GetLocalVersion()
-        {
-            return localProvider.GetVersionAsync();   
-        }
 
-        public Task<Version> GetRemoteVersion()
-        {
-            return remoteProvider.GetVersionAsync();
-        }
+        public async Task<Version> GetLocalVersion() => await localProvider.GetVersionAsync();
 
+        public async Task<Version> GetRemoteVersion() => await remoteProvider.GetVersionAsync();
     }
 
 
