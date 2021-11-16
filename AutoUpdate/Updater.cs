@@ -31,7 +31,6 @@ namespace AutoUpdate
 
         public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
 
-
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package)
         {
             this.localProvider = local;
@@ -84,7 +83,6 @@ namespace AutoUpdate
             }
         }
 
-
         public async Task<bool> UpdateAvailableAsync() => await UpdateAvailableAsync(null);
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue)
         {
@@ -104,8 +102,6 @@ namespace AutoUpdate
 
             return false;
         }
-
-
 
         public async Task Update() => await Update(null);
         public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
@@ -128,7 +124,6 @@ namespace AutoUpdate
 
             PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
         }
-
 
         public void Restart() => Restart(null);
         public void Restart(Func<List<string>> extraArguments)
@@ -177,12 +172,14 @@ namespace AutoUpdate
 
         private string GetExecutableFilename()
         {
-            var exes = Directory.GetFiles(exePath).Where(a => a.EndsWith(".exe")).ToList();
+            var files = Directory.GetFiles(exePath);
+            var exes = files.Where(a => a.EndsWith(".exe")).ToList();
+            currFilenames = new List<string>(files);
 
             if (exes.Count > 1 || !exes.Any())
             {
-                var files = currFilenames.Except(prevFilenames).ToList();
-                exes = files.Where(a => a.EndsWith(".exe")).ToList();
+                var docs = currFilenames.Except(prevFilenames).ToList();
+                exes = docs.Where(a => a.EndsWith(".exe")).ToList();
                 var file = exes.Count == 0 ? exeFile : exes.First();
 
                 Console.WriteLine(
@@ -195,7 +192,6 @@ namespace AutoUpdate
             
             return exes.First();
         }
-
 
         public void Publish()
         {
@@ -211,7 +207,6 @@ namespace AutoUpdate
             //    archive.CreateEntryFromFile(filename, filename);
             //}
         }
-
 
         public async Task<Version> GetLocalVersion() => await localProvider.GetVersionAsync();
 
