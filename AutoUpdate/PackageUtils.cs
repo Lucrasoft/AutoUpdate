@@ -12,6 +12,7 @@ namespace AutoUpdate
 {
     public class PackageUtils
     {
+
         public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(HttpClient client, Uri url, EventHandler<DownloadProgressEventArgs> handler, string operationText = "downloading")
         {
 
@@ -27,7 +28,14 @@ namespace AutoUpdate
             }
         }
 
-        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, EventHandler<DownloadProgressEventArgs> handler, string operationText)
+        public static MemoryStream FillFromRemoteStream(Stream remoteStream)
+        {
+            using MemoryStream ms = new();
+            remoteStream.CopyTo(ms);
+            return ms;
+        }
+
+        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, EventHandler<DownloadProgressEventArgs> handler, string operationText="downloading")
         {
             var returnStream = new MemoryStream();
 
@@ -62,7 +70,10 @@ namespace AutoUpdate
             int unpackedEntryCount = 0;
             int lastPercentage = -1;
 
-            handler.Invoke(handler.Target, new(operationText, lastPercentage));
+            if(handler != null)
+            {
+                handler.Invoke(handler.Target, new(operationText, lastPercentage));
+            }
 
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
@@ -99,12 +110,12 @@ namespace AutoUpdate
                             handler.Invoke(handler.Target, new(operationText, completePercentage));
                         }
                     }
+
                 }
+
             }
 
-
         }
-
 
     }
 }

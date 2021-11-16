@@ -32,6 +32,7 @@ namespace AutoUpdate
             this.package = package;
         }
 
+
         public async Task<bool> UpdateAvailableAsync()
         {
             return await UpdateAvailableAsync(null);
@@ -41,12 +42,19 @@ namespace AutoUpdate
         {
             var localVersion = await localProvider.GetVersionAsync();
             var remoteVersion = await remoteProvider.GetVersionAsync();
+
+            Console.WriteLine($"[UpdateAvailableAsync] Local:{localVersion} Remote:{remoteVersion}");
             if (remoteVersion > localVersion)
             {
                 bool continueUpdate = true;
-                if (updateMessageContinue != null) continueUpdate = updateMessageContinue.Invoke(localVersion, remoteVersion);
+                if (updateMessageContinue != null)
+                {
+                    continueUpdate = updateMessageContinue.Invoke(localVersion, remoteVersion);
+                }
+
                 return continueUpdate;
             }
+
             return false;
         }
 
@@ -96,7 +104,9 @@ namespace AutoUpdate
             //starts the (hopefully correcly updated) process using the original executable name startup arguments.
             var arguments = Environment.GetCommandLineArgs();
             var lstArgs = new List<string>();
-            for (int i = 1; i < arguments.Length; i++) //1st argument is always the executable path (see AppCore from MSDN reference).
+
+            //1st argument is always the executable path (see AppCore from MSDN reference).
+            for (int i = 1; i < arguments.Length; i++) 
             {
                 lstArgs.Add(arguments[i]);
             }
@@ -111,14 +121,17 @@ namespace AutoUpdate
                 }
             }
 
+
             // most relaibly way to determine the running .exe is -> 
-            var exeFile = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             // working dir could be <> executable dir.
             var curPath = Directory.GetCurrentDirectory();
-                        
-            var psi = new ProcessStartInfo();
-            psi.FileName = exeFile;
-            psi.WorkingDirectory = curPath;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = exeFile,
+                WorkingDirectory = curPath
+            };
 
             //add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
             foreach (var arg in lstArgs)

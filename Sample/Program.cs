@@ -15,8 +15,13 @@ namespace Sample
             //var container = "containername";
             //var blob = new BlobStorage(connectionString, container);
 
+            string connectionString = "DefaultEndpointsProtocol=https;AccountName=teststorage777;AccountKey=Tq56DDVRLkmY6S/srcXoGsas6n1ao4fVeYYLdamWvR+Mxih4LZ6H2B3IBH40xv8AUGaAvOidcA+x6CcM9H5hrw==;EndpointSuffix=core.windows.net";
+            string container = "releases";
+
+
             var au = new AutoUpdateBuilder()
-                .AddGithub("https://github.com/niektuytel/HelloRelease")
+                .AddBlobStorage(connectionString, container)
+                //.AddGithub("https://github.com/niektuytel/HelloRelease")
                 .Build();
 
             //au.OnDownloadProgress += Au_OnDownloadProgress;

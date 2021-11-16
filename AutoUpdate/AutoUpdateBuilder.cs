@@ -1,4 +1,5 @@
-﻿using AutoUpdate.Package;
+﻿using AutoUpdate.BlobStorage;
+using AutoUpdate.Package;
 using AutoUpdate.Providers;
 using Azure;
 using Azure.Storage.Blobs;
@@ -6,7 +7,6 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Octokit;
-using Sample;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -134,35 +134,28 @@ namespace AutoUpdate
             return this;
         }
 
-
-
-
-
-        // Bv.Builder.AddBlobStorage(storageaccount, folder); waarin automatisch geregeld is hoe de remote version werkt, en hoe de bestandsnaam opgebouwd is.
-        // Een Azure Blob Storage add-on
-        // de remote version is nu een vaste bestands naam waar bv een version.json bestand staat + een application.x.y.z.zip bestand.
-        // de UPDATE kant, weet hoe die die kan vinden.
-        // de autoupdate PUBLISH kant, weet hoe die een nieuwe versie (zichzelf) daar kan publiceren, door zowel een zip van zichzelf te maken, deze te uploaden naar de blobstorage met de juiste naam, en de version.json in de blobstorage aan te passen.
-
         /// <summary>
-        /// Provide the url of a github repository.
+        /// Provide the url of the azure blob storage.
         /// </summary>
-        /// <param name="url">Github repo url.</param>
-        /// <returns></returns>
-        public AutoUpdateBuilder AddBlobStorageAsync(string connectionString, string container)
+        /// <param name="connectionString">Connection string of storage account.</param>
+        /// <param name="container">Blob container name.</param>
+        /// <returns>AutoUpdateBuilder class</returns>
+        public AutoUpdateBuilder AddBlobStorage(string connectionString, string container)
         {
-            var blob = new BlobStorage(connectionString, container);
-            
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient(container);
+
+            remote = new BlobStorageVersionProvider(containerClient);
+            package = new BlobStoragePackage(containerClient);
 
             return this;
         }
 
-
         /// <summary>
         /// Provide the url of a github repository.
         /// </summary>
         /// <param name="url">Github repo url.</param>
-        /// <returns></returns>
+        /// <returns>AutoUpdateBuilder class</returns>
         public AutoUpdateBuilder AddGithub(string url)
         {
             var uri = new Uri(url);
@@ -197,11 +190,10 @@ namespace AutoUpdate
             return this;
         }
 
-
         /// <summary>
         /// Build the IUpdater instance.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Updater class</returns>
         public IUpdater Build()
         {
             if (remote==null || package == null)
@@ -211,36 +203,6 @@ namespace AutoUpdate
 
             return new Updater(local, remote, package);
         }
-
-
-        //public void DownloadProgressEvent(DownloadProgressEventArgs process)
-        //{
-        //}
-
-
-        ////This delegate can be used to point to methods
-        ////which return void and take a string.
-        //public delegate void MyEventHandler(string foo);
-
-        ////This event can cause any method which conforms
-        ////to MyEventHandler to be called.
-        //public event MyEventHandler SomethingHappened;
-
-        ////Here is some code I want to be executed
-        ////when SomethingHappened fires.
-        //void HandleSomethingHappened(string foo)
-        //{
-        //    //Do some stuff
-        //}
-
-        ////I am creating a delegate (pointer) to HandleSomethingHappened
-        ////and adding it to SomethingHappened's list of "Event Handlers".
-        //myObj.SomethingHappened += new MyEventHandler(HandleSomethingHappened);
-
-        ////To raise the event within a method.
-        //SomethingHappened("bar");
-
-
 
     }
 }
