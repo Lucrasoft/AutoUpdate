@@ -9,6 +9,8 @@ using System.IO.Compression;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using AutoUpdate.Models;
+using System.Text.Json;
+using System.Linq;
 
 namespace AutoUpdate
 {
@@ -21,17 +23,56 @@ namespace AutoUpdate
         //TODO include logger from DI
         private readonly ILogger<Updater> logger;
 
+        private List<string> prevFilenames = new();
+        private List<string> currFilenames = new();
 
         public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
-
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package)
         {
             this.localProvider = local;
             this.remoteProvider = remote;
             this.package = package;
+
+            RemoveDuplicatedFiles();
         }
 
+        private void RemoveDuplicatedFiles()
+        {
+            Console.WriteLine($"Removing duplicates");
+
+            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
+            var exePath = Path.GetDirectoryName(exeFile);
+            var jsonName = $"{exePath}\\prev_filenames.json";
+
+            currFilenames = new List<string>(Directory.GetFiles(exePath));
+
+            if(File.Exists(jsonName))
+            {
+                var text = File.ReadAllText(jsonName);
+                prevFilenames = JsonSerializer.Deserialize<List<string>>(text);
+            }
+
+            // remove duplicated filenames
+            if (prevFilenames.Count != currFilenames.Count)
+            {
+                if(prevFilenames.Count > 0)
+                {
+                    var duplicates = currFilenames.Except(prevFilenames).ToList();
+                    Console.WriteLine($"Removing: [\n\t{string.Join(",\n\t ", duplicates)}]");
+
+                    foreach (var filename in duplicates)
+                    {
+                        File.Delete(filename);
+                        currFilenames.Remove(filename);
+                    }
+                }
+
+                string json = JsonSerializer.Serialize(currFilenames);
+                File.WriteAllText(jsonName, json);
+            }
+
+        }
 
         public async Task<bool> UpdateAvailableAsync()
         {
@@ -40,6 +81,7 @@ namespace AutoUpdate
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue)
         {
+
             var localVersion = await localProvider.GetVersionAsync();
             var remoteVersion = await remoteProvider.GetVersionAsync();
 
@@ -61,6 +103,7 @@ namespace AutoUpdate
 
         public async Task Update()
         {
+
             try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
             catch (Exception) { }
 
@@ -81,6 +124,7 @@ namespace AutoUpdate
             PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
         }
 
+
         public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
         {
             OnDownloadProgress = onDownloadProgress;
@@ -99,13 +143,16 @@ namespace AutoUpdate
         public void Restart(Func<List<string>> extraArguments)
         {
             //TODO : loop prevention!! but how?!
-            // -> what loop? when a new executable is introduced with an update? or..?
+            // -> what loop? (
+            // anwer: running application has other .exe name so keeps running himself untill and create exe in current folder
+            // Create application with othername than where to listen to. than run it he create a application with othername and 
+            // ) when a new executable is introduced with an update? or..?
 
             //starts the (hopefully correcly updated) process using the original executable name startup arguments.
             var arguments = Environment.GetCommandLineArgs();
             var lstArgs = new List<string>();
 
-            //1st argument is always the executable path (see AppCore from MSDN reference).
+            //1st argument is always the executable path (see AppCore from MSDN  reference).
             for (int i = 1; i < arguments.Length; i++) 
             {
                 lstArgs.Add(arguments[i]);

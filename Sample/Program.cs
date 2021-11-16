@@ -3,32 +3,34 @@ using AutoUpdate.Models;
 using System;
 using System.Threading.Tasks;
 
-namespace Sample
+namespace ConsoleApp2Test
 {
     class Program
     {
+
         static async Task Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
-            //var connectionString = "DefaultEndpointsProtocol=https;AccountName=hellorelease;AccountKey=BMMilJYqCibCKFR7P9iZ9x7A8TbpiSZ2mrJdu8EgoyiPUuhDjS1i+T0q1Y2tocJMZODD9qbrX9BBDkoN9ureaw==;EndpointSuffix=core.windows.net";
-            //var container = "containername";
-            //var blob = new BlobStorage(connectionString, container);
+            #region generate AutoUpdate (output: au)
+            var auBuilder = new AutoUpdateBuilder();
 
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=teststorage777;AccountKey=Tq56DDVRLkmY6S/srcXoGsas6n1ao4fVeYYLdamWvR+Mxih4LZ6H2B3IBH40xv8AUGaAvOidcA+x6CcM9H5hrw==;EndpointSuffix=core.windows.net";
-            string container = "releases";
+            if (args.Length == 1)
+            {
+                auBuilder.AddGithub(url: args[0]);
+            }
+            else
+            {
+                auBuilder.AddBlobStorage(connectionString: args[0], container: args[1]);
+            }
 
+            var au = auBuilder.Build();
+            #endregion
 
-            var au = new AutoUpdateBuilder()
-                .AddBlobStorage(connectionString, container)
-                //.AddGithub("https://github.com/niektuytel/HelloRelease")
-                .Build();
-
-            //au.OnDownloadProgress += Au_OnDownloadProgress;
-
-            if (await au.UpdateAvailableAsync())
+            if (await au.UpdateAvailableAsync(null))
             {
                 Console.WriteLine("AutoUpdate: found new version. Updating...");
+
                 await au.Update();
                 au.Restart();
             }
@@ -37,16 +39,9 @@ namespace Sample
                 Console.WriteLine("AutoUpdate: no update found.");
             }
 
-
             Console.ReadLine();
         }
 
-        //private static void Au_OnDownloadProgress(object sender, DownloadProgressEventArgs e)
-        //{
-        //    Console.WriteLine($"Description: {e.Description}");
-        //    Console.WriteLine($"Progress: {e.Procentage}");
-        //    Console.WriteLine($"finish");
-        //}
-
     }
+
 }
