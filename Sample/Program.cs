@@ -3,7 +3,7 @@ using AutoUpdate.Models;
 using System;
 using System.Threading.Tasks;
 
-namespace ConsoleApp2Test
+namespace OtherNamedConsole
 {
     class Program
     {

@@ -192,7 +192,7 @@ namespace AutoUpdate
             {
                 Console.WriteLine(
                     $"(AutoUpdate::Updater::Restart(Func<List<string>>))\n" +
-                    $"[WARNING] There are more .exe Files, restart on {exeFile}"
+                    $"[WARNING] There are more .exe Files, restart on {exeFile}\n"
                 );
 
                 return exeFile;
