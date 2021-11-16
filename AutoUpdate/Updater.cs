@@ -19,12 +19,10 @@ namespace AutoUpdate
         private readonly IVersionProvider localProvider;
         private readonly IVersionProvider remoteProvider;
         private readonly IPackage package;
+        private readonly string jsonFilename;
 
         //TODO include logger from DI
         private readonly ILogger<Updater> logger;
-
-        private List<string> prevFilenames = new();
-        private List<string> currFilenames = new();
 
         public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
 
@@ -34,45 +32,52 @@ namespace AutoUpdate
             this.remoteProvider = remote;
             this.package = package;
 
-            RemoveDuplicatedFiles();
-        }
-
-        private void RemoveDuplicatedFiles()
-        {
-            Console.WriteLine($"Removing duplicates");
-
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
-            var jsonName = $"{exePath}\\prev_filenames.json";
+            jsonFilename = $"{exePath}\\prev_filenames.json";
 
-            currFilenames = new List<string>(Directory.GetFiles(exePath));
+            RemoveDuplicatedFiles(exePath);
+        }
 
-            if(File.Exists(jsonName))
+        private void RemoveDuplicatedFiles(string exePath)
+        {
+            // get filenames
+            var files = Directory.GetFiles(exePath);
+            var currFilenames = new List<string>(files);
+            var prevFilenames = new List<string>();
+
+            if (File.Exists(jsonFilename))
             {
-                var text = File.ReadAllText(jsonName);
+                var text = File.ReadAllText(jsonFilename);
                 prevFilenames = JsonSerializer.Deserialize<List<string>>(text);
             }
 
-            // remove duplicated filenames
+            // update filenames
             if (prevFilenames.Count != currFilenames.Count)
             {
                 if(prevFilenames.Count > 0)
                 {
                     var duplicates = currFilenames.Except(prevFilenames).ToList();
-                    Console.WriteLine($"Removing: [\n\t{string.Join(",\n\t ", duplicates)}]");
-
                     foreach (var filename in duplicates)
                     {
+                        // skip 
+                        if (filename == jsonFilename) continue;
+
                         File.Delete(filename);
                         currFilenames.Remove(filename);
                     }
+
+                    Console.WriteLine(
+                         $"(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
+                         $"[INFO] Removed: [\n\t{string.Join(",\n\t ", duplicates)}\n\t]"
+                    );
                 }
 
                 string json = JsonSerializer.Serialize(currFilenames);
-                File.WriteAllText(jsonName, json);
+                File.WriteAllText(jsonFilename, json);
             }
-
         }
+
 
         public async Task<bool> UpdateAvailableAsync()
         {
@@ -81,11 +86,9 @@ namespace AutoUpdate
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue)
         {
-
             var localVersion = await localProvider.GetVersionAsync();
             var remoteVersion = await remoteProvider.GetVersionAsync();
 
-            Console.WriteLine($"[UpdateAvailableAsync] Local:{localVersion} Remote:{remoteVersion}");
             if (remoteVersion > localVersion)
             {
                 bool continueUpdate = true;
@@ -103,7 +106,6 @@ namespace AutoUpdate
 
         public async Task Update()
         {
-
             try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
             catch (Exception) { }
 
@@ -124,7 +126,6 @@ namespace AutoUpdate
             PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
         }
 
-
         public async Task Update(EventHandler<DownloadProgressEventArgs> onDownloadProgress)
         {
             OnDownloadProgress = onDownloadProgress;
@@ -137,17 +138,8 @@ namespace AutoUpdate
             Restart(null);
         }
 
-        //3b) het restart proces moet goed getest worden.. Het is niet heel eenvoudig, 
-        //    want je moet het huidige proces afbreken + nieuwe starten, en alle commandline arguments moeten doorgeven worden , 
-        //    maar vooral moet ook de std in / std out goed blijven werken. Dat moet even goed getest worden.
         public void Restart(Func<List<string>> extraArguments)
         {
-            //TODO : loop prevention!! but how?!
-            // -> what loop? (
-            // anwer: running application has other .exe name so keeps running himself untill and create exe in current folder
-            // Create application with othername than where to listen to. than run it he create a application with othername and 
-            // ) when a new executable is introduced with an update? or..?
-
             //starts the (hopefully correcly updated) process using the original executable name startup arguments.
             var arguments = Environment.GetCommandLineArgs();
             var lstArgs = new List<string>();
@@ -168,16 +160,13 @@ namespace AutoUpdate
                 }
             }
 
-
-            // most relaibly way to determine the running .exe is -> 
-            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
-            // working dir could be <> executable dir.
-            var curPath = Directory.GetCurrentDirectory();
-
+            #region restart EXE
+            var exeFile = GetExecutableFilename();
+            var exePath = Path.GetDirectoryName(exeFile);
             var psi = new ProcessStartInfo
             {
                 FileName = exeFile,
-                WorkingDirectory = curPath
+                WorkingDirectory = exePath
             };
 
             //add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
@@ -187,8 +176,29 @@ namespace AutoUpdate
             }
             
             Process.Start(psi);
+            #endregion
+
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
-            //Environment.Exit(0);  
+            //Environment.Exit(0);
+        }
+
+        private static string GetExecutableFilename()
+        {
+            var exeFile = Process.GetCurrentProcess().MainModule.FileName;
+            var exePath = Path.GetDirectoryName(exeFile);
+            var exes = Directory.GetFiles(exePath).Where(a => a.EndsWith(".exe")).ToList();
+
+            if (exes.Count > 1)
+            {
+                Console.WriteLine(
+                    $"(AutoUpdate::Updater::Restart(Func<List<string>>))\n" +
+                    $"[WARNING] There are more .exe Files, restart on {exeFile}"
+                );
+
+                return exeFile;
+            }
+            
+            return exes.First();
         }
 
 
