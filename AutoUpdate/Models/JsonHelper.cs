@@ -8,10 +8,22 @@ namespace AutoUpdate.Models
         public static (T, string) GetFile<T>(string path="./") where T : IHasFileName, new()
         {
             var model = new T();
+            var filename = "";
 
-            path = path.EndsWith("/") ? path[0..^1] : path;
-            path = path.EndsWith("\\") ? path[0..^1] : path;
-            return (model, $"{path}/{model.FileName}");
+            if(path.EndsWith("/"))
+            {
+                filename = $"{path[0..^1]}/{model.FileName}";
+            }
+            else if (path.EndsWith("\\"))
+            {
+                filename = $"{path[0..^1]}\\{model.FileName}";
+            }
+            else
+            {
+                filename = $"{path}{model.FileName}";
+            }
+
+            return (model, filename);
         }
 
         public static T Read<T>(string path="./") where T : IHasFileName, new()

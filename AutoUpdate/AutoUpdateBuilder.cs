@@ -167,8 +167,6 @@ namespace AutoUpdate
                 throw new ArgumentException(
                     $"invalid: {url}. (hint: https://github.com/user/repo)"
                 );
-
-                //return this;
             }
 
             var owner = urlpaths[0];

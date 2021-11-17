@@ -23,10 +23,7 @@ namespace AutoUpdate
 
         private readonly string exeFile;
         private readonly string exePath;
-        private readonly string jsonFilename;
-        //private List<string> currFilenames = new();
-        //private List<string> prevFilenames = new();
-        private FolderData folderData;
+        private readonly FolderData folderData;
 
         //TODO include logger from DI
         private readonly ILogger<Updater> logger;
@@ -62,10 +59,10 @@ namespace AutoUpdate
 
 
             // update filenames
-            if (currFileNames.Count > 0 && currFileNames.SequenceEqual(prevFileNames))
+            if (currFileNames.Count > 0 && !currFileNames.SequenceEqual(prevFileNames))
             {
                 var duplicated = prevFileNames.Except(currFileNames).ToList();
-                duplicated = duplicated.Except(files).ToList();
+                //duplicated = duplicated.Except(files).ToList();
 
                 Console.WriteLine($"Duplicates: [{string.Join(", ", duplicated)}]");
 

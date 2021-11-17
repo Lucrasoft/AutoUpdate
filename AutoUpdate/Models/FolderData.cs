@@ -10,10 +10,10 @@ namespace AutoUpdate.Models
         [JsonIgnore]
         public string FileName => "structure_folder.json";
 
-        [JsonProperty("latest_structure")]
+        [JsonProperty("current_filrnames")]
         public List<string> CurrentFileNames { get; set; } = new();
 
-        [JsonProperty("previous_structure")]
+        [JsonProperty("previous_filenames")]
         public List<string> PreviousFileNames { get; set; } = new();
     }
 }
