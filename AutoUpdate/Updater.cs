@@ -20,72 +20,23 @@ namespace AutoUpdate
         private readonly IVersionProvider localProvider;
         private readonly IVersionProvider remoteProvider;
         private readonly IPackage package;
-
-        private readonly string exeFile;
-        private readonly string exePath;
-        private readonly FolderData folderData;
-
-        //TODO include logger from DI
-        private readonly ILogger<Updater> logger;
+        private readonly IExeFolder exeFolder;
 
         public event EventHandler<DownloadProgressEventArgs> OnDownloadProgress;
+
+        //TODO include logger from DI
+        //private readonly ILogger<Updater> logger;
+
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package)
         {
             this.localProvider = local;
             this.remoteProvider = remote;
             this.package = package;
-
-            //Huidige locatie van de .exe file bepaald de bestemming
-            exeFile = Process.GetCurrentProcess().MainModule.FileName;
-            exePath = Path.GetDirectoryName(exeFile);
-            folderData = JsonHelper.Read<FolderData>(path: exePath);
+            this.exeFolder = new ExeFolder();
 
             // remove duplicated files
-            RemoveDuplicatedFiles();
-        }
-
-        private void RemoveDuplicatedFiles()
-        {
-            var files = Directory.GetFiles(exePath);
-            var currFileNames = folderData.CurrentFileNames;
-
-            // update filenames
-            if (currFileNames.Count > 0 && !currFileNames.SequenceEqual(files))
-            {
-                var duplicated = files.Except(currFileNames).ToList();
-                if (duplicated.Count > 0)
-                {
-                    // kill previous running program file
-                    KillProcesses(duplicated);
-
-                    foreach (var filename in duplicated)
-                    {
-                        try
-                        {
-                            File.Delete(filename);
-                            Console.WriteLine($"[DELETE] {filename}");
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine($"[DELETE FAILED] {filename}\n\t --> Exception Message: {e.Message}");
-                        }
-                    }
-                }
-            }
-        }
-
-        private static void KillProcesses(List<string> files)
-        {
-            // kill previous running program file
-            var exeFiles = files.Where(a => a.EndsWith(".exe"));
-            foreach (var exe in exeFiles)
-            {
-                foreach (var proc in Process.GetProcessesByName(exe))
-                {
-                    proc.Kill();
-                }
-            }
+            exeFolder.RemoveDuplicatedFileNames();
         }
 
         public async Task<bool> UpdateAvailableAsync() => await UpdateAvailableAsync(null);
@@ -132,24 +83,9 @@ namespace AutoUpdate
             var archive = new ZipArchive(new MemoryStream(package));
 
             // set folder names and current names
-            UpdateFolderFileNames(archive);
+            exeFolder.UpdateFileNames(archive);
 
-            PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
-        }
-
-        private void UpdateFolderFileNames(ZipArchive archive)
-        {
-            var prevFileNames = Directory.GetFiles(exePath).ToList();
-            var currFileNames = archive.Entries.Select(a => $"{exePath}\\{a.FullName}").ToList();
-
-            // set all history filenames
-            (_, var jsonFile) = JsonHelper.GetFile<FolderData>(path:exePath);
-            currFileNames.Add(jsonFile);
-            prevFileNames.Add(jsonFile);
-
-            folderData.CurrentFileNames = currFileNames.ToList();
-            folderData.PreviousFileNames = prevFileNames.ToList();
-            JsonHelper.Write(folderData, path: exePath);
+            PackageUtils.ExtractArchive(archive, exeFolder.ExePath, OnDownloadProgress);
         }
 
         public void Restart() => Restart(null);
@@ -175,77 +111,31 @@ namespace AutoUpdate
                 }
             }
 
-            // restart EXE
-            var file = GetExecutableFilename();
+            // Start new EXE
+            var file = exeFolder.GetExecutableFileName();
             var path = Path.GetDirectoryName(file);
-            //var psi = new ProcessStartInfo
-            //{
-            //    FileName = file,
-            //    WorkingDirectory = path,
-            //    WindowStyle = ProcessWindowStyle.Normal,
-            //    CreateNoWindow = false,
-            //    UseShellExecute = true,
-                
-            //};
-
-            ////add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
-            //foreach (var arg in lstArgs)
-            //{
-            //    psi.ArgumentList.Add(arg);
-            //}
-
-
-
-            //TODO: There is a change that the .exe filename changed. so old data has to been removed.
-            // How to do this????
-
             var psi = new ProcessStartInfo
             {
                 FileName = @"cmd",
                 Arguments = $"/C start {file} {string.Join(" ", lstArgs)}",
                 WorkingDirectory = path,
-                WindowStyle = ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Normal
             };
 
             Console.WriteLine($"[RESTART] {psi.Arguments}");
 
             Process.Start(psi);
 
-
-            //Process.Start(psi);
-            Process.GetCurrentProcess().Kill();
-
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
             //Environment.Exit(0);
-        }
-
-        private string GetExecutableFilename()
-        {
-            var files = folderData.CurrentFileNames;
-            var exes = files.Where(a => a.EndsWith(".exe")).ToList();
-
-            if (exes.Count > 1 || !exes.Any())
-            {
-                var docs = files.Except(folderData.PreviousFileNames).ToList();
-                exes = docs.Where(a => a.EndsWith(".exe")).ToList();
-                var file = exes.Count == 0 ? exeFile : exes.First();
-
-                Console.WriteLine(
-                    $"(AutoUpdate::Updater::GetExecutableFilename)\n" +
-                    $"[WARNING] There are more .exe Files, restart on {file}\n"
-                );
-
-                return exeFile;
-            }
-
-            return exes.First();
+            Process.GetCurrentProcess().Kill();
         }
 
         public void Publish()
         {
             //generate zip archive from current location...?
 
-            ZipFile.CreateFromDirectory(exePath, "c:\\temp\\test.zip");
+            ZipFile.CreateFromDirectory(exeFolder.ExePath, "c:\\temp\\test.zip");
 
             //var zipStream = new MemoryStream();
             //var archive = new ZipArchive(zipStream, ZipArchiveMode.Create);

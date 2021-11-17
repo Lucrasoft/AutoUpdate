@@ -3,7 +3,7 @@ using System.IO;
 
 namespace AutoUpdate.Models
 {
-    public class JsonHelper
+    public static class JsonHelper
     {
         public static (T, string) GetFile<T>(string path="./") where T : IHasFileName, new()
         {

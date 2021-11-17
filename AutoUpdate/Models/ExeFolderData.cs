@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace AutoUpdate.Models
 {
-    public class FolderData : IHasFileName
+    public class ExeFolderData : IHasFileName
     {
         // get static from generic supported in .NET 6
         [JsonIgnore]
