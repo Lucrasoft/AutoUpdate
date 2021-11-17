@@ -178,30 +178,42 @@ namespace AutoUpdate
             // restart EXE
             var file = GetExecutableFilename();
             var path = Path.GetDirectoryName(file);
-            var psi = new ProcessStartInfo
-            {
-                FileName = file,
-                WorkingDirectory = path,
-                WindowStyle = ProcessWindowStyle.Normal,
-                CreateNoWindow = false,
-                UseShellExecute = true,
+            //var psi = new ProcessStartInfo
+            //{
+            //    FileName = file,
+            //    WorkingDirectory = path,
+            //    WindowStyle = ProcessWindowStyle.Normal,
+            //    CreateNoWindow = false,
+            //    UseShellExecute = true,
                 
-            };
+            //};
 
-            //add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
-            foreach (var arg in lstArgs)
-            {
-                psi.ArgumentList.Add(arg);
-            }
+            ////add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
+            //foreach (var arg in lstArgs)
+            //{
+            //    psi.ArgumentList.Add(arg);
+            //}
 
-            Console.WriteLine($"[RESTART] {psi.FileName}");
 
 
             //TODO: There is a change that the .exe filename changed. so old data has to been removed.
             // How to do this????
 
+            var psi = new ProcessStartInfo
+            {
+                FileName = @"cmd",
+                Arguments = $"/C start {file} {string.Join(" ", lstArgs)}",
+                WorkingDirectory = path,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            Console.WriteLine($"[RESTART] {psi.Arguments}");
+
             Process.Start(psi);
-            //Process.GetCurrentProcess().Kill();
+
+
+            //Process.Start(psi);
+            Process.GetCurrentProcess().Kill();
 
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
             //Environment.Exit(0);
