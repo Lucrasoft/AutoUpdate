@@ -53,11 +53,19 @@ namespace AutoUpdate
             var currFileNames = folderData.CurrentFileNames;
             var prevFileNames = folderData.PreviousFileNames;
 
+
+            Console.WriteLine($"Files: [{string.Join(", ", files)}]");
+            Console.WriteLine($"Current Filename: [{string.Join(", ", currFileNames)}]");
+            Console.WriteLine($"Previous Filename: [{string.Join(", ", prevFileNames)}]");
+
+
             // update filenames
             if (currFileNames.Count > 0 && currFileNames.SequenceEqual(prevFileNames))
             {
                 var duplicated = prevFileNames.Except(currFileNames).ToList();
                 duplicated = duplicated.Except(files).ToList();
+
+                Console.WriteLine($"Duplicates: [{string.Join(", ", duplicated)}]");
 
                 if (duplicated.Count > 0)
                 {
@@ -79,6 +87,11 @@ namespace AutoUpdate
         {
             var localVersion = await GetLocalVersion();
             var remoteVersion = await GetRemoteVersion();
+
+            //Console.WriteLine(
+            //    $"(AutoUpdate::Updater::UpdateAvailableAsync)\n" +
+            //    $"remote version:{remoteVersion} <> local version:{localVersion}"
+            //);
 
             if (remoteVersion > localVersion)
             {
@@ -157,7 +170,7 @@ namespace AutoUpdate
                 }
             }
 
-            #region restart EXE
+            // restart EXE
             var file = GetExecutableFilename();
             var path = Path.GetDirectoryName(file);
             var psi = new ProcessStartInfo
@@ -171,9 +184,13 @@ namespace AutoUpdate
             {
                 psi.ArgumentList.Add(arg);
             }
-            
+
+            //Console.WriteLine(
+            //    $"(AutoUpdate::Updater::Restart)\n" +
+            //    $"[INFO] Restart on: {psi.FileName}\n"
+            //);
+
             Process.Start(psi);
-            #endregion
 
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
             //Environment.Exit(0);
@@ -191,7 +208,7 @@ namespace AutoUpdate
                 var file = exes.Count == 0 ? exeFile : exes.First();
 
                 Console.WriteLine(
-                    $"(AutoUpdate::Updater::Restart(Func<List<string>>))\n" +
+                    $"(AutoUpdate::Updater::GetExecutableFilename)\n" +
                     $"[WARNING] There are more .exe Files, restart on {file}\n"
                 );
 
