@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using AutoUpdate.Models;
 using System.Text.Json;
 using System.Linq;
+using Microsoft.VisualStudio.Utilities;
 
 namespace AutoUpdate
 {
@@ -23,8 +24,9 @@ namespace AutoUpdate
         private readonly string exeFile;
         private readonly string exePath;
         private readonly string jsonFilename;
-        private List<string> currFilenames = new();
-        private List<string> prevFilenames = new();
+        //private List<string> currFilenames = new();
+        //private List<string> prevFilenames = new();
+        private FolderData folderData;
 
         //TODO include logger from DI
         private readonly ILogger<Updater> logger;
@@ -40,46 +42,35 @@ namespace AutoUpdate
             //Huidige locatie van de .exe file bepaald de bestemming
             exeFile = Process.GetCurrentProcess().MainModule.FileName;
             exePath = Path.GetDirectoryName(exeFile);
-            jsonFilename = $"{exePath}\\prev_filenames.json";
+            folderData = JsonHelper.Read<FolderData>(path: exePath);
 
             RemoveDuplicatedFiles();
         }
 
         private void RemoveDuplicatedFiles()
         {
-            // get filenames
             var files = Directory.GetFiles(exePath);
-            currFilenames = new List<string>(files);
-
-            if (File.Exists(jsonFilename))
-            {
-                var text = File.ReadAllText(jsonFilename);
-                prevFilenames = JsonSerializer.Deserialize<List<string>>(text);
-            }
+            var currFileNames = folderData.CurrentFileNames;
+            var prevFileNames = folderData.PreviousFileNames;
 
             // update filenames
-            if (prevFilenames.Count != currFilenames.Count)
+            if (currFileNames.Count > 0 && currFileNames.SequenceEqual(prevFileNames))
             {
-                if(prevFilenames.Count > 0)
-                {
-                    var duplicates = currFilenames.Except(prevFilenames).ToList();
-                    foreach (var filename in duplicates)
-                    {
-                        // skip 
-                        if (filename == jsonFilename) continue;
+                var duplicated = prevFileNames.Except(currFileNames).ToList();
+                duplicated = duplicated.Except(files).ToList();
 
+                if (duplicated.Count > 0)
+                {
+                    foreach (var filename in duplicated)
+                    {
                         File.Delete(filename);
-                        currFilenames.Remove(filename);
                     }
 
                     Console.WriteLine(
                          $"\n(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
-                         $"[INFO] Removed: [\n\t{string.Join(",\n\t ", duplicates)}\n]"
+                         $"[INFO] Removed files: [\n\t{string.Join(",\n\t ", duplicated)}\n]"
                     );
                 }
-
-                string json = JsonSerializer.Serialize(currFilenames);
-                File.WriteAllText(jsonFilename, json);
             }
         }
 
@@ -122,7 +113,25 @@ namespace AutoUpdate
             //Huidige locatie van de .exe file bepaald de bestemming
             var archive = new ZipArchive(new MemoryStream(package));
 
+            // set folder names and current names
+            UpdateFolderFileNames(archive);
+
             PackageUtils.ExtractArchive(archive, exePath, OnDownloadProgress);
+        }
+
+        private void UpdateFolderFileNames(ZipArchive archive)
+        {
+            var prevFileNames = Directory.GetFiles(exePath).ToList();
+            var currFileNames = archive.Entries.Select(a => $"{exePath}\\{a.FullName}").ToList();
+
+            // set all history filenames
+            (_, var jsonFile) = JsonHelper.GetFile<FolderData>(path:exePath);
+            currFileNames.Add(jsonFile);
+            prevFileNames.Add(jsonFile);
+
+            folderData.CurrentFileNames = currFileNames.ToList();
+            folderData.PreviousFileNames = prevFileNames.ToList();
+            JsonHelper.Write(folderData, path: exePath);
         }
 
         public void Restart() => Restart(null);
@@ -172,13 +181,12 @@ namespace AutoUpdate
 
         private string GetExecutableFilename()
         {
-            var files = Directory.GetFiles(exePath);
+            var files = folderData.CurrentFileNames;
             var exes = files.Where(a => a.EndsWith(".exe")).ToList();
-            currFilenames = new List<string>(files);
 
             if (exes.Count > 1 || !exes.Any())
             {
-                var docs = currFilenames.Except(prevFilenames).ToList();
+                var docs = files.Except(folderData.PreviousFileNames).ToList();
                 exes = docs.Where(a => a.EndsWith(".exe")).ToList();
                 var file = exes.Count == 0 ? exeFile : exes.First();
 
@@ -189,7 +197,7 @@ namespace AutoUpdate
 
                 return exeFile;
             }
-            
+
             return exes.First();
         }
 
