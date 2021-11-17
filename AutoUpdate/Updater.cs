@@ -68,15 +68,16 @@ namespace AutoUpdate
 
                 if (duplicated.Count > 0)
                 {
+                    Console.WriteLine(
+                         $"\n(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
+                         $"[INFO] Removed files: [\n\t{string.Join(",\n\t ", duplicated)}\n]"
+                    );
+
                     foreach (var filename in duplicated)
                     {
                         File.Delete(filename);
                     }
 
-                    Console.WriteLine(
-                         $"\n(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
-                         $"[INFO] Removed files: [\n\t{string.Join(",\n\t ", duplicated)}\n]"
-                    );
                 }
             }
         }

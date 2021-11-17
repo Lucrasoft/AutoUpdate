@@ -20,6 +20,7 @@ namespace AutoUpdate.Models
             }
             else
             {
+                path += path.Contains('\\') ? '\\' : '/';
                 filename = $"{path}{model.FileName}";
             }
 
