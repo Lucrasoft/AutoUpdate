@@ -39,6 +39,8 @@ namespace AutoUpdate
             this.remoteProvider = remote;
             this.package = package;
 
+            Console.WriteLine("Updater()");
+
             //Huidige locatie van de .exe file bepaald de bestemming
             exeFile = Process.GetCurrentProcess().MainModule.FileName;
             exePath = Path.GetDirectoryName(exeFile);

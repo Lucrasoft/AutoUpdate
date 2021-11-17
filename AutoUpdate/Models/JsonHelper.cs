@@ -1,12 +1,5 @@
-﻿using Microsoft.VisualStudio.Utilities;
-using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace AutoUpdate.Models
 {
@@ -28,7 +21,7 @@ namespace AutoUpdate.Models
             if (File.Exists(filename))
             {
                 var txt = File.ReadAllText(filename);
-                newModel = JsonSerializer.Deserialize<T>(txt);
+                newModel = JsonConvert.DeserializeObject<T>(txt);
             }
 
             return newModel;
@@ -40,7 +33,7 @@ namespace AutoUpdate.Models
 
             if (data == null) data = newModel;
 
-            string text = JsonSerializer.Serialize(data);
+            string text = JsonConvert.SerializeObject(data);
             File.WriteAllText(filename, text);
         }
     }
