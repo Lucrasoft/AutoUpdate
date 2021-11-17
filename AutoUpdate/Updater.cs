@@ -36,13 +36,12 @@ namespace AutoUpdate
             this.remoteProvider = remote;
             this.package = package;
 
-            Console.WriteLine("Updater()");
-
             //Huidige locatie van de .exe file bepaald de bestemming
             exeFile = Process.GetCurrentProcess().MainModule.FileName;
             exePath = Path.GetDirectoryName(exeFile);
             folderData = JsonHelper.Read<FolderData>(path: exePath);
 
+            // remove duplicated files
             RemoveDuplicatedFiles();
         }
 
@@ -52,17 +51,14 @@ namespace AutoUpdate
             var currFileNames = folderData.CurrentFileNames;
             var prevFileNames = folderData.PreviousFileNames;
 
-
             Console.WriteLine($"Files: [{string.Join(", ", files)}]");
             Console.WriteLine($"Current Filename: [{string.Join(", ", currFileNames)}]");
             Console.WriteLine($"Previous Filename: [{string.Join(", ", prevFileNames)}]");
-
 
             // update filenames
             if (currFileNames.Count > 0 && !currFileNames.SequenceEqual(prevFileNames))
             {
                 var duplicated = prevFileNames.Except(currFileNames).ToList();
-                //duplicated = duplicated.Except(files).ToList();
 
                 Console.WriteLine($"Duplicates: [{string.Join(", ", duplicated)}]");
 
@@ -73,11 +69,26 @@ namespace AutoUpdate
                          $"[INFO] Removed files: [\n\t{string.Join(",\n\t ", duplicated)}\n]"
                     );
 
+                    // kill previous running program file
+                    KillProcesses(duplicated);
+
                     foreach (var filename in duplicated)
                     {
                         File.Delete(filename);
                     }
+                }
+            }
+        }
 
+        private static void KillProcesses(List<string> files)
+        {
+            // kill previous running program file
+            var exeFiles = files.Where(a => a.EndsWith(".exe"));
+            foreach (var exe in exeFiles)
+            {
+                foreach (var proc in Process.GetProcessesByName(exe))
+                {
+                    proc.Kill();
                 }
             }
         }
@@ -193,7 +204,7 @@ namespace AutoUpdate
             Process.Start(psi);
 
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
-            //Environment.Exit(0);
+            // Environment.Exit(0);
         }
 
         private string GetExecutableFilename()
