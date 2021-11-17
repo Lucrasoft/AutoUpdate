@@ -49,32 +49,27 @@ namespace AutoUpdate
         {
             var files = Directory.GetFiles(exePath);
             var currFileNames = folderData.CurrentFileNames;
-            var prevFileNames = folderData.PreviousFileNames;
-
-            Console.WriteLine($"Files: [{string.Join(", ", files)}]");
-            Console.WriteLine($"Current Filename: [{string.Join(", ", currFileNames)}]");
-            Console.WriteLine($"Previous Filename: [{string.Join(", ", prevFileNames)}]");
 
             // update filenames
-            if (currFileNames.Count > 0 && !currFileNames.SequenceEqual(prevFileNames))
+            if (currFileNames.Count > 0 && !currFileNames.SequenceEqual(files))
             {
-                var duplicated = prevFileNames.Except(currFileNames).ToList();
-
-                Console.WriteLine($"Duplicates: [{string.Join(", ", duplicated)}]");
-
+                var duplicated = files.Except(currFileNames).ToList();
                 if (duplicated.Count > 0)
                 {
-                    Console.WriteLine(
-                         $"\n(AutoUpdate::Updater::RemoveDuplicatedFiles())\n" +
-                         $"[INFO] Removed files: [\n\t{string.Join(",\n\t ", duplicated)}\n]"
-                    );
-
                     // kill previous running program file
                     KillProcesses(duplicated);
 
                     foreach (var filename in duplicated)
                     {
-                        File.Delete(filename);
+                        try
+                        {
+                            File.Delete(filename);
+                            Console.WriteLine($"[DELETE] {filename}");
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"[DELETE FAILED] {filename}\n\t --> Exception Message: {e.Message}");
+                        }
                     }
                 }
             }
@@ -99,10 +94,9 @@ namespace AutoUpdate
             var localVersion = await GetLocalVersion();
             var remoteVersion = await GetRemoteVersion();
 
-            //Console.WriteLine(
-            //    $"(AutoUpdate::Updater::UpdateAvailableAsync)\n" +
-            //    $"remote version:{remoteVersion} <> local version:{localVersion}"
-            //);
+            Console.WriteLine(
+                $"[INFO version]\n\tREMOTE:{remoteVersion}\n\tLOCAL:{localVersion}"
+            );
 
             if (remoteVersion > localVersion)
             {
@@ -187,7 +181,11 @@ namespace AutoUpdate
             var psi = new ProcessStartInfo
             {
                 FileName = file,
-                WorkingDirectory = path
+                WorkingDirectory = path,
+                WindowStyle = ProcessWindowStyle.Normal,
+                CreateNoWindow = false,
+                UseShellExecute = true,
+                
             };
 
             //add arguments. With new ArgumentList.Add() methed we need not be concerned with adding quotes around white-spaced arguments etc. etc.
@@ -196,15 +194,17 @@ namespace AutoUpdate
                 psi.ArgumentList.Add(arg);
             }
 
-            //Console.WriteLine(
-            //    $"(AutoUpdate::Updater::Restart)\n" +
-            //    $"[INFO] Restart on: {psi.FileName}\n"
-            //);
+            Console.WriteLine($"[RESTART] {psi.FileName}");
+
+
+            //TODO: There is a change that the .exe filename changed. so old data has to been removed.
+            // How to do this????
 
             Process.Start(psi);
+            //Process.GetCurrentProcess().Kill();
 
             //no do NOT exit here, this is the callers' responsibility (e.g. bootloader needs to restore command-line..).
-            // Environment.Exit(0);
+            //Environment.Exit(0);
         }
 
         private string GetExecutableFilename()
