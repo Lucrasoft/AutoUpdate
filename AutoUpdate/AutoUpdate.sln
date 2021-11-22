@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoUpdate", "AutoUpdate.csproj", "{07D7C357-1C77-4B0D-801B-E1C65D7B278F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OtherNamedConsole", "..\Sample\OtherNamedConsole.csproj", "{140021AD-A91D-4456-B701-ED5CD268293D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp2Test", "..\Sample\ConsoleApp2Test.csproj", "{140021AD-A91D-4456-B701-ED5CD268293D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

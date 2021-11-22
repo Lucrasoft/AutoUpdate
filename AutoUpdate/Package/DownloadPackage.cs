@@ -12,7 +12,7 @@ namespace AutoUpdate.Package
     {
 
         //TODO centralize this HttpClient. 
-        private static HttpClient httpClient = new HttpClient();
+        //private static HttpClient httpClient = new HttpClient();
 
         private readonly Uri downloadurl;
         private Func<Version, Uri> downloadUrlFunc;
@@ -28,7 +28,7 @@ namespace AutoUpdate.Package
             this.downloadUrlFunc = downloadUrlFunc;
         }
 
-        public async Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler)
+        public async Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
             var url = downloadurl;
             if (downloadUrlFunc!=null)
@@ -36,7 +36,12 @@ namespace AutoUpdate.Package
                 url = downloadUrlFunc(version);
             };
 
-            return (await PackageUtils.GetMemoryStreamForDownloadUrl(httpClient, url, handler)).ToArray();
+            return (await PackageUtils.GetMemoryStreamForDownloadUrl(url, handler)).ToArray();
+        }
+
+        public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        {
+            throw new NotImplementedException();
         }
     }
 }

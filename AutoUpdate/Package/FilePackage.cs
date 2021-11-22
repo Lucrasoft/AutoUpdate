@@ -21,7 +21,7 @@ namespace AutoUpdate.Package
             this.filenameFunc = filenameFunc;
         }
 
-        public Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler)
+        public Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
             string fname = filename; 
             if (filenameFunc!=null)
@@ -42,6 +42,12 @@ namespace AutoUpdate.Package
 
                 return Task.FromResult(stream.ToArray());
             }
+        }
+
+        public Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        {
+
+            return Task.CompletedTask;
         }
     }
 }

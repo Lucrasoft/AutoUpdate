@@ -8,6 +8,8 @@ namespace AutoUpdate.Package
 {
     public interface IPackage
     {
-        Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler);
+        Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler);
+
+        Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler);
     }
 }

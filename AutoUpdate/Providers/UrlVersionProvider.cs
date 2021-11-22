@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,36 +10,46 @@ namespace AutoUpdate.Providers
 {
     class UrlVersionProvider : IVersionProvider
     {
-        //Should be static! 
-        private static readonly HttpClient client = new();
-
         private readonly Uri remoteurl;
 
 
         public UrlVersionProvider(Uri url)
         {
-            this.remoteurl = url;
+            remoteurl = url;
         }
 
         public async Task<Version> GetVersionAsync()
         {
-            var response = await client.GetAsync(remoteurl);
-            if (!response.IsSuccessStatusCode)
-            {
-                return new Version(0, 0, 0, 0);
-            }
+            var version = new Version(0, 0, 0, 0);
+            var response = await Updater.HTTPClient.GetAsync(remoteurl);
+            if (!response.IsSuccessStatusCode) return version;
+
+            // read version
             var content = await response.Content.ReadAsStringAsync();
+            switch (response.Content.Headers.ContentType.MediaType.ToLower())
+            {
+                // { "version":"1.0.0.0" }
+                case "application/json":
+                    version = new JsonToVersionReader().GetVersion(content);
+                    break;
 
-            // TODO -> content-type geeft wel goed beeld wat er ongeveer terug komt (XML of JSON of Text/Raw)
-            // Example var contenttype = x.Content.Headers.ContentType;
-            // 
-            // voor nu doen we JSON assumption + 
-            // expected json format is { .... , "version" : "x.y.z" , ..... } 
+                // <version>1.0.0.0</version>
+                case "application/xml":
+                    version = new XmlToVersionReader().GetVersion(content);
+                    break;
 
-            var reader = new JsonToVersionReader();
-            var version = reader.GetVersion(content);
+                // 1.0.0.0
+                case "text/plain":
+                    version = new StringToVersionReader().GetVersion(content);
+                    break;
+            }
+
             return version;
         }
 
+        public async Task SetVersionAsync(Version version)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

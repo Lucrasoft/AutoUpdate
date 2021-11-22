@@ -4,19 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Net.Http;
 using System.IO.Compression;
 using AutoUpdate.Models;
+using System.Net.Http;
 
 namespace AutoUpdate
 {
     public class PackageUtils
     {
-
-        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(HttpClient client, Uri url, EventHandler<DownloadProgressEventArgs> handler, string operationText = "downloading")
+        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(Uri url, EventHandler<ProgressDownloadEvent> handler, string operationText = "downloading")
         {
 
-            using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await Updater.HTTPClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 long streamLength = -1;
                 if (response.Content.Headers.ContentLength != null) streamLength = (long)response.Content.Headers.ContentLength;
@@ -35,7 +34,7 @@ namespace AutoUpdate
             return ms;
         }
 
-        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, EventHandler<DownloadProgressEventArgs> handler, string operationText="downloading")
+        public static MemoryStream FillFromRemoteStream(Stream remoteStream, long streamLength, EventHandler<ProgressDownloadEvent> handler, string operationText="downloading")
         {
             var returnStream = new MemoryStream();
 
@@ -64,7 +63,7 @@ namespace AutoUpdate
             return returnStream;
         }
 
-        public static void ExtractArchive(ZipArchive archive, string installationPath, EventHandler<DownloadProgressEventArgs> handler, string operationText="extracting")
+        public static void ExtractArchive(ZipArchive archive, string installationPath, EventHandler<ProgressDownloadEvent> handler, string operationText="extracting")
         {
             int archiveEntryCount = archive.Entries.Count;
             int unpackedEntryCount = 0;

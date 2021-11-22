@@ -1,4 +1,5 @@
 ﻿using AutoUpdate.BlobStorage;
+using AutoUpdate.Models;
 using AutoUpdate.Package;
 using AutoUpdate.Providers;
 using Azure;
@@ -10,6 +11,7 @@ using Octokit;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,14 +23,40 @@ namespace AutoUpdate
     /// </summary>
     public class AutoUpdateBuilder
     {
+        private HttpClient httpClient = new();
+        private UpdateType updateType = UpdateType.InPlace;
+
         private IVersionProvider local;
         private IVersionProvider remote;
         private IPackage package;
+
 
         public AutoUpdateBuilder()
         {
             //default version providers..
             this.local = new LocalAssemblyVersionProvider();
+        }
+
+        /// <summary>
+        /// Set HttpClient than the whole application contains the same configurations.
+        /// </summary>
+        /// <param name="client">The HttpClient that will been used globally</param>
+        /// <returns></returns>
+        public AutoUpdateBuilder SetHttpClient(HttpClient client)
+        {
+            httpClient = client;
+            return this;
+        }
+
+        /// <summary>
+        /// The type of update would infect the way of how the new versions are downloaded.<br/>
+        /// </summary>
+        /// <param name="type">The way how to download new releases</param>
+        /// <returns></returns>
+        public AutoUpdateBuilder SetUpdateType(UpdateType type)
+        {
+            updateType = type;
+            return this;
         }
 
         /// <summary>
@@ -152,7 +180,7 @@ namespace AutoUpdate
         }
 
         /// <summary>
-        /// Provide the url of a github repository.
+        /// Can use a global HttpClient than can contain settings.
         /// </summary>
         /// <param name="url">Github repo url.</param>
         /// <returns>AutoUpdateBuilder class</returns>
@@ -199,7 +227,7 @@ namespace AutoUpdate
                 throw new ArgumentNullException("You must specifiy a remote version provider .");
             }
 
-            return new Updater(local, remote, package);
+            return new Updater(local, remote, package, updateType, httpClient);
         }
 
     }

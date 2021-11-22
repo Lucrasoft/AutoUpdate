@@ -11,5 +11,7 @@ namespace AutoUpdate
 
         Task<Version> GetVersionAsync();
 
+        Task SetVersionAsync(Version version);
+
     }
 }

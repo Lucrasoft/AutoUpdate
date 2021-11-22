@@ -12,27 +12,38 @@ namespace AutoUpdate.BlobStorage
 {
     class BlobStoragePackage : IPackage
     {
-        public BlobContainerClient ContainerClient { get; set; }
+        private BlobContainerClient containerClient { get; set; }
 
-        public BlobClient Client { get; set; }
+        private BlobClient blobClient { get; set; }
 
         public BlobStoragePackage(BlobContainerClient containerClient)
         {
-            ContainerClient = containerClient;
+            this.containerClient = containerClient;
         }
 
-        public async Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler)
+        public async Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
-            Client = ContainerClient.GetBlobClient($"{version}.zip");
+            blobClient = containerClient.GetBlobClient($"{version}.zip");
 
-            if (Client.Exists())
+            if (await blobClient.ExistsAsync())
             {
-                var response = await Client.DownloadAsync();
+                var response = await blobClient.DownloadAsync();
                 return PackageUtils.FillFromRemoteStream(response.Value.Content).ToArray();
             }
 
             return null;
         }
 
+        public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        {
+            var filename = $"{version}.zip";
+
+            // Get a reference to a blob
+            blobClient = containerClient.GetBlobClient(filename);
+
+            // Upload data from the local file
+            await blobClient.UploadAsync(filename, true);
+        }
+    
     }
 }

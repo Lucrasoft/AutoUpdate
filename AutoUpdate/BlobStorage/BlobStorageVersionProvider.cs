@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using static AutoUpdate.Providers.JsonToVersionReader;
 
 namespace AutoUpdate.BlobStorage
 {
@@ -38,8 +39,13 @@ namespace AutoUpdate.BlobStorage
                 }
             }
 
-            var version = JsonConvert.DeserializeObject<VersionFile>(json);
-            return new Version(version.Latest);
+            var version = JsonConvert.DeserializeObject<JsonVersionObject>(json);
+            return new Version(version.version);
+        }
+
+        public async Task SetVersionAsync(Version version)
+        {
+            throw new NotImplementedException();
         }
 
     }

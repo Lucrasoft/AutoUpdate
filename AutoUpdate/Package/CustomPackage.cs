@@ -8,7 +8,6 @@ namespace AutoUpdate.Package
 {
     class CustomPackage : IPackage
     {
-
         private byte[] bytes;
 
         public CustomPackage(byte[] bytes)
@@ -16,9 +15,15 @@ namespace AutoUpdate.Package
             this.bytes = bytes;
         }
 
-        public Task<byte[]> GetContentAsync(Version version, EventHandler<DownloadProgressEventArgs> handler)
+        public Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
             return Task.FromResult(this.bytes);
+        }
+
+        public Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        {
+            this.bytes = data;
+            return Task.CompletedTask;
         }
     }
 }

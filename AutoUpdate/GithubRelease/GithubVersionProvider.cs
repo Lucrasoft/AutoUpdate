@@ -48,6 +48,10 @@ namespace AutoUpdate.Providers
 
             return version;
         }
-    
+
+        public async Task SetVersionAsync(Version version)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

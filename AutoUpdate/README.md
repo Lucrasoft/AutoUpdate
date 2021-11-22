@@ -95,13 +95,13 @@ Jan 2021 : First idea's / implementation
 
 ## TODO 
 
-[ ] Check Restart (arguments + process wait)
+[X] Check Restart (arguments + process wait)
 
-[ ] Assembly properties goed vullen.
+[X] Assembly properties goed vullen.
 
-[ ] With Restart : the current ARGUMENTS should be copied to the new process.
+[X] With Restart : the current ARGUMENTS should be copied to the new process.
 
-[ ] Bij een Restart ligt "looping (blijvende restarts)" op de loer...
+[X] Bij een Restart ligt "looping (blijvende restarts)" op de loer...
 	VOorbeeld: als de nieuwe zip file geen nieuwere versie blijkt te hebben, maar het mechanisme dus blijft update/restraten. 
 	Hoe te voorkomen???
 
@@ -118,11 +118,11 @@ Jan 2021 : First idea's / implementation
 	pre-install.* (bat/cmd/.ps/.exe) bestanden
     post-install.bat / cmd / ps / exe => indien aanwezig, dan uitvoeren op de client machine?
 
-[ ] AutoUpdateBuilder.SetHttpClient( client ) 
+[X] AutoUpdateBuilder.SetHttpClient( client ) 
     Extra optie in de auto builder om een eigen httpclient mee te geven. 
 	Ook dieper liggende classes moet deze client dan gebruiken
 	Voordeel -> je kan eventueel token-protected url's dan ook ondersteunen, doordat je een httclient geeft die correcte authentication headers heeft.
 		
-[ ] UrlVersionProvider could auto-detect the correct VersionReader based on ContentType in HTTP response ?!
+[X] UrlVersionProvider could auto-detect the correct VersionReader based on ContentType in HTTP response ?!
   
 [ ] Xml ondersteuning... ooit..

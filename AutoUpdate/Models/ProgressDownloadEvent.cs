@@ -2,9 +2,9 @@
 
 namespace AutoUpdate.Models
 {
-    public class DownloadProgressEventArgs: EventArgs
+    public class ProgressDownloadEvent: EventArgs
     {
-        public DownloadProgressEventArgs(string description, int procentage)
+        public ProgressDownloadEvent(string description, int procentage)
         {
             Description = description;
             Procentage = procentage;

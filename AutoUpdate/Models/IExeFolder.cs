@@ -20,7 +20,7 @@ namespace AutoUpdate.Models
         /// <summary>
         /// History storage executable folder.
         /// </summary>
-        ExeFolderData FolderData { get; }
+        VersionsData FolderData { get; }
 
         /// <summary>
         /// Kill the process of previous application version.
@@ -29,15 +29,21 @@ namespace AutoUpdate.Models
         void RemoveDuplicatedFileNames();
 
         /// <summary>
-        /// Update <see cref="ExeFolderData"/>.<br/>
-        /// On file named: <see cref="ExeFolderData.FileName"/>
-        /// </summary>
-        /// <param name="archive">New unzipped application version</param>
-        void UpdateFileNames(ZipArchive archive);
-
-        /// <summary>
         /// Get latest version installed executable filename
         /// </summary>
         string GetExecutableFileName();
+
+
+        /// <summary>
+        /// Zip folder into memory bytes
+        /// </summary>
+        /// <returns>zipped folder</returns>
+        public byte[] Zip();
+
+        /// <summary>
+        /// Zip this folder into given filename
+        /// </summary>
+        /// <param name="filename">zip filename</param>
+        void ZipTo(string filename);
     }
 }

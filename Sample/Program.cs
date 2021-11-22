@@ -24,20 +24,34 @@ namespace OtherNamedConsole
                 auBuilder.AddBlobStorage(connectionString: args[0], container: args[1]);
             }
 
+
+            //auBuilder.RemoteVersion(new Uri("https://teststorage777.blob.core.windows.net/releases/version.json"));
+
             var au = auBuilder.Build();
             #endregion
 
-            if (await au.UpdateAvailableAsync(null))
+
+
+
+
+            // UPDATE
+            if (await au.UpdateAvailableAsync())
             {
                 Console.WriteLine("AutoUpdate: found new version. Updating...");
 
-                await au.Update();
-                au.Restart();
+                if(await au.Update())
+                {
+                    au.Restart();
+                }
             }
             else
             {
                 Console.WriteLine("AutoUpdate: no update found.");
             }
+
+
+            // PUBLISH
+            //await auPublish(verbose:true);
 
             Console.ReadLine();
         }
