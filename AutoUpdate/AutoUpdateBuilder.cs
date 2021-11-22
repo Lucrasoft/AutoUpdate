@@ -1,7 +1,8 @@
 ﻿using AutoUpdate.BlobStorage;
+using AutoUpdate.GithubRelease;
 using AutoUpdate.Models;
 using AutoUpdate.Package;
-using AutoUpdate.Providers;
+using AutoUpdate.Provider;
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -17,14 +18,13 @@ using System.Threading.Tasks;
 
 namespace AutoUpdate
 {
-
     /// <summary>
     /// A builder/helper to setup the correct IUpdater instance.
     /// </summary>
     public class AutoUpdateBuilder
     {
         private HttpClient httpClient = new();
-        private UpdateType updateType = UpdateType.InPlace;
+        private PackageUpdateEnum packageUpdateType = PackageUpdateEnum.InPlace;
 
         private IVersionProvider local;
         private IVersionProvider remote;
@@ -34,7 +34,7 @@ namespace AutoUpdate
         public AutoUpdateBuilder()
         {
             //default version providers..
-            this.local = new LocalAssemblyVersionProvider();
+            local = new LocalAssemblyVersionProvider();
         }
 
         /// <summary>
@@ -45,17 +45,6 @@ namespace AutoUpdate
         public AutoUpdateBuilder SetHttpClient(HttpClient client)
         {
             httpClient = client;
-            return this;
-        }
-
-        /// <summary>
-        /// The type of update would infect the way of how the new versions are downloaded.<br/>
-        /// </summary>
-        /// <param name="type">The way how to download new releases</param>
-        /// <returns></returns>
-        public AutoUpdateBuilder SetUpdateType(UpdateType type)
-        {
-            updateType = type;
             return this;
         }
 
@@ -74,9 +63,8 @@ namespace AutoUpdate
         /// A file containing the version information
         /// </summary>
         /// <param name="filename"></param>
-        /// <param name="format">Indicates if the content contains json, xml or text.</param>
         /// <returns></returns>
-        public AutoUpdateBuilder LocalVersion(string filename, VersionFormat format = VersionFormat.AutoDetect)
+        public AutoUpdateBuilder LocalVersion(string filename)
         {
             this.local = new FileVersionProvider(filename);
             return this;
@@ -97,9 +85,8 @@ namespace AutoUpdate
         /// A file containing the version information.
         /// </summary>
         /// <param name="filename"></param>
-        /// <param name="format">Indicates if the content contains json, xml or text.</param>
         /// <returns></returns>
-        public AutoUpdateBuilder RemoteVersion(string filename, VersionFormat format = VersionFormat.AutoDetect)
+        public AutoUpdateBuilder RemoteVersion(string filename)
         {
             this.remote = new FileVersionProvider(filename);
             return this;
@@ -109,21 +96,30 @@ namespace AutoUpdate
         /// A HTTP URI which returns the version information
         /// </summary>
         /// <param name="url"></param>
-        /// <param name="format">Indicates if the content contains json, xml or text.</param>
         /// <returns></returns>
-        public AutoUpdateBuilder RemoteVersion(Uri url, VersionFormat format = VersionFormat.AutoDetect)
+        public AutoUpdateBuilder RemoteVersion(Uri url)
         {
             this.remote = new UrlVersionProvider(url);
             return this;
         }
 
+        /// <summary>
+        /// The type of update would infect the way of how the new versions are downloaded.<br/>
+        /// </summary>
+        /// <param name="type">The way how to download new releases</param>
+        /// <returns></returns>
+        public AutoUpdateBuilder PackageUpdateType(PackageUpdateEnum type)
+        {
+            packageUpdateType = type;
+            return this;
+        }
 
         /// <summary>
         /// Provide a HTTP URI which contents should contain a zip archive.
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public AutoUpdateBuilder AddPackage( Uri url )
+        public AutoUpdateBuilder AddPackage(Uri url)
         {
             package = new DownloadPackage(url);
             return this;
@@ -134,7 +130,7 @@ namespace AutoUpdate
         /// </summary>
         /// <param name="UrlFunction"></param>
         /// <returns></returns>
-        public AutoUpdateBuilder AddPackage( Func<Version, Uri> UrlFunction) 
+        public AutoUpdateBuilder AddPackage(Func<Version, Uri> UrlFunction) 
         {
             package = new DownloadPackage(UrlFunction);
             return this;
@@ -199,19 +195,9 @@ namespace AutoUpdate
 
             var owner = urlpaths[0];
             var repo = urlpaths[1];
+
             remote = new GithubVersionProvider(owner, repo);
-
-            package = new DownloadPackage((v) =>
-                {
-                    var client = new GitHubClient(new ProductHeaderValue(repo));
-                    var releases = client.Repository.Release.GetAll(owner, repo);
-                    releases.Wait();
-
-                    var release = releases.Result[0];
-                    var packageurl = release.Assets[0].BrowserDownloadUrl;
-                    return new Uri(packageurl);
-                }
-            );
+            package = new GithubPackage(owner, repo);
 
             return this;
         }
@@ -222,12 +208,12 @@ namespace AutoUpdate
         /// <returns>Updater class</returns>
         public IUpdater Build()
         {
-            if (remote==null || package == null)
+            if (remote == null || package == null)
             {
                 throw new ArgumentNullException("You must specifiy a remote version provider .");
             }
 
-            return new Updater(local, remote, package, updateType, httpClient);
+            return new Updater(local, remote, package, packageUpdateType, httpClient);
         }
 
     }

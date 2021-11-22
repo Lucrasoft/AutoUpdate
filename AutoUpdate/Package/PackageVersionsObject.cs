@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace AutoUpdate.Models
+namespace AutoUpdate.Package
 {
-    public class VersionsData
+    public class PackageVersionsObject
     {
         [JsonProperty("versions")]
         public List<string> Versions { get; set; } = new();

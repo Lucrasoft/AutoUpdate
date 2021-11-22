@@ -1,4 +1,6 @@
-﻿using Azure.Storage.Blobs;
+﻿using AutoUpdate.Models;
+using AutoUpdate.Provider;
+using Azure.Storage.Blobs;
 using Newtonsoft.Json;
 using Octokit;
 using System;
@@ -8,7 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using static AutoUpdate.Providers.JsonToVersionReader;
+using static AutoUpdate.Provider.JsonToVersionReader;
 
 namespace AutoUpdate.BlobStorage
 {
@@ -27,25 +29,30 @@ namespace AutoUpdate.BlobStorage
         public async Task<Version> GetVersionAsync()
         {
             string json = "";
-
-            if (Client.Exists())
+            if (await Client.ExistsAsync())
             {
-                var response = Client.Download();
+                var response = await Client.DownloadAsync();
                 using var streamReader = new StreamReader(response.Value.Content);
 
                 while (!streamReader.EndOfStream)
                 {
-                    json += streamReader.ReadLine();
+                    json += await streamReader.ReadLineAsync();
                 }
             }
 
-            var version = JsonConvert.DeserializeObject<JsonVersionObject>(json);
-            return new Version(version.version);
+            return new JsonToVersionReader().GetVersion(json);
         }
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            var file = new JsonVersionObject()
+            {
+                version = PackageUtils.GetVersionString(version)
+            };
+            var data = PackageUtils.GenerateStream(file);
+
+            // Upload data from the local file
+            await Client.UploadAsync(data, true);
         }
 
     }

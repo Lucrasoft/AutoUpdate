@@ -44,18 +44,18 @@ namespace AutoUpdate
         /// </summary>
         /// <returns></returns>
         public Task Publish(EventHandler<ProgressUploadEvent> onUploadProgress = null);
-        
-        ///// <summary>
-        ///// Returns the local version
-        ///// </summary>
-        ///// <returns></returns>
-        //public Task<Version> GetLocalVersion();
 
-        ///// <summary>
-        ///// Returns the remote version 
-        ///// </summary>
-        ///// <returns></returns>
-        //public Task<Version> GetRemoteVersion();
+        /// <summary>
+        /// Returns the local version
+        /// </summary>
+        /// <returns></returns>
+        public Task<Version> GetLocalVersion();
+
+        /// <summary>
+        /// Returns the remote version 
+        /// </summary>
+        /// <returns></returns>
+        public Task<Version> GetRemoteVersion();
 
     }
 }

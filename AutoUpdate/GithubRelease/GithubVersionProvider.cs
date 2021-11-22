@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     public class GithubVersionProvider : IVersionProvider
     {
@@ -51,7 +51,7 @@ namespace AutoUpdate.Providers
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("[WARNING] Pushing a version to Github is not implemented");
         }
     }
 }

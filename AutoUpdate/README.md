@@ -109,13 +109,15 @@ Jan 2021 : First idea's / implementation
     Voor bootstrap projecten zou een SIDEBYSIDE versioning ook handig zijn.
 	Middels de builder kunnen opgeven?
 
-[ ] Zou tijdens update ook "merge"  nodig zijn ? 
+(Updated json data will not been updated ?)
+[X] 
+	Zou tijdens update ook "merge"  nodig zijn ? 
 	Voorbeeld : dat je bestaande .json bestanden ' merged ' met update json? oorspronkelijk waardes blijven , maar additionele dingen worden samengevoegd? hm. 
 	klinkt alleen niet logisch. ook lastig aan te geven in de zip file misschien?
 
 
-[ ] Pre/Post install scripts in de ZIP file ondersteunen. 
-	pre-install.* (bat/cmd/.ps/.exe) bestanden
+[X] Pre/Post install scripts in de ZIP file ondersteunen. 
+	pre-install.* (.bat/.cmd/.ps/.exe) bestanden
     post-install.bat / cmd / ps / exe => indien aanwezig, dan uitvoeren op de client machine?
 
 [X] AutoUpdateBuilder.SetHttpClient( client ) 
@@ -125,4 +127,4 @@ Jan 2021 : First idea's / implementation
 		
 [X] UrlVersionProvider could auto-detect the correct VersionReader based on ContentType in HTTP response ?!
   
-[ ] Xml ondersteuning... ooit..
+[ ] Xml ondersteuning... ooit.. (already done?? check!)

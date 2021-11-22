@@ -4,13 +4,10 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class LocalAssemblyVersionProvider : IVersionProvider
     {
-
-
-
         public Task<Version> GetVersionAsync()
         {
             var version = Assembly.GetEntryAssembly().GetName().Version ?? new Version(0, 0);
@@ -19,7 +16,7 @@ namespace AutoUpdate.Providers
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("[WARNING] Set own project version is not possible");
         }
 
     }

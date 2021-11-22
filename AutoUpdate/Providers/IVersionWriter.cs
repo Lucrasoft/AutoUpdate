@@ -4,8 +4,8 @@ using System.Text;
 
 namespace AutoUpdate.Provider
 {
-    interface IVersionReader
+    interface IVersionWriter
     {
-        Version GetVersion(string content);
+        string SetVersion(Version version);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AutoUpdate.Models;
 using AutoUpdate.Package;
+using AutoUpdate.Provider;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,37 +16,38 @@ namespace AutoUpdate
     internal class Updater : IUpdater
     {
         public static HttpClient HTTPClient = new();
-        public static UpdateType UpdateType = UpdateType.InPlace;
+        public static PackageUpdateEnum PackageUpdateType = PackageUpdateEnum.InPlace;
 
         public event EventHandler<ProgressDownloadEvent> OnDownloadProgress;
 
-        private readonly IPackage packageHandler;
-        private readonly Versions versionHandler;
+        private readonly IPackage package;
+        private readonly PackageHelper packageHelper;
 
         //TODO include logger from DI
         //private readonly ILogger<Updater> logger;
 
-        public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, UpdateType type, HttpClient client)
+        public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum type, HttpClient client)
         {
-            packageHandler = package;
-            versionHandler = new Versions(local, remote);
-            UpdateType = type;
+            this.package = package;
+
+            packageHelper = new(local, remote);
+            PackageUpdateType = type;
             HTTPClient = client;
         }
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue=null)
         {
-            var localVersion = await versionHandler.GetLocalVersionAsync();
-            var remoteVersion = await versionHandler.GetRemoteVersionAsync();
+            var localVersion = await GetLocalVersion();
+            var remoteVersion = await GetRemoteVersion();
 
             // catch failed remote version
-            if(versionHandler.IsFailedVersion(remoteVersion))
+            if(packageHelper.VersionIsFailing(remoteVersion))
             {
                 Console.WriteLine($"[WARNING] Skip version:{remoteVersion} as it failed previously.");
                 return false;
             }
 
-            Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
+            // Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
 
             if (remoteVersion > localVersion)
             {
@@ -68,11 +70,11 @@ namespace AutoUpdate
             try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
             catch (Exception) { }
 
-            var remoteVersion = await versionHandler.GetRemoteVersionAsync();
-            var package = await packageHandler.GetContentAsync(remoteVersion, OnDownloadProgress);
+            var remoteVersion = await GetRemoteVersion();
+            var package = await this.package.GetContentAsync(remoteVersion, OnDownloadProgress);
 
             // set new version
-            var success = versionHandler.SetVersion(package, remoteVersion, OnDownloadProgress);
+            var success = packageHelper.SetVersion(package, remoteVersion, OnDownloadProgress);
             if(!success)
             {
                 Console.WriteLine("[ERROR] remote version do not match with .EXE version!");
@@ -88,6 +90,9 @@ namespace AutoUpdate
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
             var lstArgs = new List<string>();
+
+            // Run: (pre/post)-install.* (.bat / .cmd /.ps /.exe) bestanden
+            packageHelper.RunPreAndPostInstall();
 
             //1st argument is always the executable path (see AppCore from MSDN  reference).
             for (int i = 1; i < arguments.Length; i++)
@@ -132,12 +137,12 @@ namespace AutoUpdate
             return true;
         }
 
-        public  async Task<bool> PublishAvailableAsync(Func<Version, Version, bool> publishMessageContinue=null)
+        public async Task<bool> PublishAvailableAsync(Func<Version, Version, bool> publishMessageContinue=null)
         {
-            var localVersion = await versionHandler.GetLocalVersionAsync();
-            var remoteVersion = await versionHandler.GetRemoteVersionAsync();
+            var localVersion = await GetLocalVersion();
+            var remoteVersion = await GetRemoteVersion();
 
-            Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
+            // Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
 
             bool publishing = false;
             if (remoteVersion < localVersion)
@@ -154,15 +159,19 @@ namespace AutoUpdate
 
         public async Task Publish(EventHandler<ProgressUploadEvent> onUploadProgress=null)
         {
-            var localVersion = await versionHandler.GetLocalVersionAsync();
+            var localVersion = await GetLocalVersion();
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
+            var currVersion = PackageHelper.CurrentVersionToZip(exePath);
 
-            var currVersion = Versions.CurrentVersionToZip(exePath);
-            await packageHandler.SetContentAsync(currVersion, localVersion, onUploadProgress);
+            await package.SetContentAsync(currVersion, localVersion, onUploadProgress);
+            await packageHelper.SetRemoteVersionAsync(localVersion);
         }
 
-    }
+        public async Task<Version> GetLocalVersion() => await packageHelper.GetLocalVersionAsync();
 
+        public async Task<Version> GetRemoteVersion() => await packageHelper.GetRemoteVersionAsync();
+
+    }
 
 }

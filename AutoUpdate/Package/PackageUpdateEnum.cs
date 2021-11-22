@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AutoUpdate.Models
 {
-    public enum UpdateType
+    public enum PackageUpdateEnum
     {
         SideBySide=0,
         InPlace=1

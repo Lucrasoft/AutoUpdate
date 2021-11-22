@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     public enum VersionFormat
     {
@@ -14,7 +14,6 @@ namespace AutoUpdate.Providers
 
     static class VersionFormatExtension
     {
-
         public static IVersionReader GetReader(this VersionFormat format)
         {
             switch (format)
@@ -29,6 +28,22 @@ namespace AutoUpdate.Providers
                     throw new ArgumentOutOfRangeException("This format does not have a versionreader.");
             }
         }
+
+        public static IVersionWriter GetWriter(this VersionFormat format)
+        {
+            switch (format)
+            {
+                case VersionFormat.Json:
+                    return new VersionToJsonWriter();
+                case VersionFormat.Text:
+                    return new VersionToStringWriter();
+                case VersionFormat.Xml:
+                    return new VersionToXmlWriter();
+                default:
+                    throw new ArgumentOutOfRangeException("This format does not have a versionreader.");
+            }
+        }
+
     }
 
 }

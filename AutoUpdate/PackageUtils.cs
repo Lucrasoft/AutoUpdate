@@ -7,11 +7,31 @@ using System.IO;
 using System.IO.Compression;
 using AutoUpdate.Models;
 using System.Net.Http;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.Globalization;
+using System.Diagnostics;
 
 namespace AutoUpdate
 {
     public class PackageUtils
     {
+
+        public static async Task PostMemoryStreamToDownloadUrl(MemoryStream data, string filename, Uri url, EventHandler<ProgressUploadEvent> handler, string operationText = "uploading")
+        {
+            filename = Path.GetFileName(filename);
+            var name = Path.GetFileNameWithoutExtension(filename);
+
+            using var client = new HttpClient();
+            using var content = new MultipartFormDataContent("Upload----" + DateTime.Now.ToString(CultureInfo.InvariantCulture))
+            {
+                { new StreamContent(data), name, filename }
+            };
+
+            using var message = await client.PostAsync(url, content);
+            var input = await message.Content.ReadAsStringAsync();
+        }
+
         public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(Uri url, EventHandler<ProgressDownloadEvent> handler, string operationText = "downloading")
         {
 
@@ -115,6 +135,31 @@ namespace AutoUpdate
             }
 
         }
+
+        public static Stream GenerateStream(object obj)
+        {
+            var s = JsonConvert.SerializeObject(obj);
+
+            var stream = new MemoryStream();
+            var writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
+
+        public static string GetVersionString(FileVersionInfo info) => GetVersionString(new Version(info.FileVersion));
+
+        public static string GetVersionString(Version version)
+        {
+            var major = $"{Math.Max(version.Major, 0)}";
+            var minor = $"{Math.Max(version.Minor, 0)}";
+            var build = $"{Math.Max(version.Build, 0)}";
+            var revision = $"{Math.Max(version.Revision, 0)}";
+
+            return $"{major}.{minor}.{build}.{revision}";
+        }
+
 
     }
 }

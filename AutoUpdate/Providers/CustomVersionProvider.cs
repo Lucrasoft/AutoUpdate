@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class CustomVersionProvider : IVersionProvider
     {
-
-        private readonly Version version;
+        private Version version;
 
         public CustomVersionProvider(Version version)
         {
@@ -22,7 +21,7 @@ namespace AutoUpdate.Providers
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            this.version = version;
         }
     }
 }

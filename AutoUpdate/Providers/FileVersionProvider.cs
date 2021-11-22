@@ -5,15 +5,14 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class FileVersionProvider : IVersionProvider
     {
-
         private string filename;
         private VersionFormat format;
 
-        public FileVersionProvider(string filename, VersionFormat format = VersionFormat.AutoDetect)
+        public FileVersionProvider(string filename)
         {
             this.filename = filename;
         }
@@ -47,7 +46,9 @@ namespace AutoUpdate.Providers
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            var writer = format.GetWriter();
+            var content = writer.SetVersion(version);
+            await System.IO.File.WriteAllTextAsync(filename, content);
         }
     }
 }

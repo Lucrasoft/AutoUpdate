@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class UrlVersionProvider : IVersionProvider
     {
@@ -49,7 +49,7 @@ namespace AutoUpdate.Providers
 
         public async Task SetVersionAsync(Version version)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("[WARNING] Set version of URL is not possible");
         }
     }
 }

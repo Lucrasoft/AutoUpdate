@@ -41,7 +41,13 @@ namespace AutoUpdate.Package
 
         public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
         {
-            throw new NotImplementedException();
+            var url = downloadurl;
+            if (downloadUrlFunc != null)
+            {
+                url = downloadUrlFunc(version);
+            };
+
+            await PackageUtils.PostMemoryStreamToDownloadUrl(new MemoryStream(data), PackageUtils.GetVersionString(version), url, handler);
         }
     }
 }

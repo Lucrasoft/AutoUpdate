@@ -36,13 +36,16 @@ namespace AutoUpdate.BlobStorage
 
         public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
         {
-            var filename = $"{version}.zip";
+
+            var stream = new MemoryStream();
+            await stream.WriteAsync(data.AsMemory(0, data.Length));
+            stream.Position = 0;
 
             // Get a reference to a blob
-            blobClient = containerClient.GetBlobClient(filename);
+            blobClient = containerClient.GetBlobClient(PackageUtils.GetVersionString(version));
 
             // Upload data from the local file
-            await blobClient.UploadAsync(filename, true);
+            await blobClient.UploadAsync(stream, true);
         }
     
     }

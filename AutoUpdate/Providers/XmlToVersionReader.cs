@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml.Serialization;
-using static AutoUpdate.Providers.JsonToVersionReader;
+using static AutoUpdate.Provider.JsonToVersionReader;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class XmlToVersionReader : IVersionReader
     {
