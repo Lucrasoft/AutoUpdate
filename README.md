@@ -109,12 +109,6 @@ Jan 2021 : First idea's / implementation
     Voor bootstrap projecten zou een SIDEBYSIDE versioning ook handig zijn.
 	Middels de builder kunnen opgeven?
 
-(Updated json data will not been updated ?)
-[ ] 
-	Zou tijdens update ook "merge"  nodig zijn ? 
-	Voorbeeld : dat je bestaande .json bestanden ' merged ' met update json? oorspronkelijk waardes blijven , maar additionele dingen worden samengevoegd? hm. 
-	klinkt alleen niet logisch. ook lastig aan te geven in de zip file misschien?
-
 
 [X] Pre/Post install scripts in de ZIP file ondersteunen. 
 	pre-install.* (.bat/.cmd/.ps/.exe) bestanden
@@ -128,6 +122,12 @@ Jan 2021 : First idea's / implementation
 [X] UrlVersionProvider could auto-detect the correct VersionReader based on ContentType in HTTP response ?!
   
 [X] Xml ondersteuning... ooit.. (already done?? check!)
+
+(Updated json data will not been updated ?)  
+[ ] 
+	Zou tijdens update ook "merge"  nodig zijn ? 
+	Voorbeeld : dat je bestaande .json bestanden ' merged ' met update json? oorspronkelijk waardes blijven , maar additionele dingen worden samengevoegd? hm. 
+	klinkt alleen niet logisch. ook lastig aan te geven in de zip file misschien?
 
 [ ]  GithubVersionProvider::GitHubClient (octokit)
 		// Bypass the limit calls to github.
