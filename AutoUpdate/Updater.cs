@@ -85,44 +85,21 @@ namespace AutoUpdate
 
         public bool Restart(Func<List<string>> extraArguments=null)
         {
-            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
-            var arguments = Environment.GetCommandLineArgs();
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
-            var exePath = Path.GetDirectoryName(exeFile);
-            var lstArgs = new List<string>();
 
             // Run: (pre/post)-install.* (.bat / .cmd /.ps /.exe) bestanden
             packageHelper.RunPreAndPostInstall();
 
-            //1st argument is always the executable path (see AppCore from MSDN  reference).
-            for (int i = 1; i < arguments.Length; i++)
-            {
-                lstArgs.Add(arguments[i]);
-            }
-
-            var extraArgs = extraArguments?.Invoke();
-            if (extraArgs != null)
-            {
-                //keep it clean.
-                foreach (var extraArg in extraArgs)
-                {
-                    if (!lstArgs.Contains(extraArg)) lstArgs.Add(extraArg);
-                }
-            }
-
-
             // In-Place (child process)
             var psi = new ProcessStartInfo
             {
-                FileName = exeFile,
-                WorkingDirectory = exePath,
+                FileName = $"{packageHelper.Path}\\{Path.GetFileName(exeFile)}" ,
+                WorkingDirectory = packageHelper.Path
             };
 
-            // add arguments
-            foreach (var arg in lstArgs)
-            {
-                psi.ArgumentList.Add(arg);
-            }
+            // all project arguments
+            var lstArgs = GetAllArgs(extraArguments);
+            foreach (var arg in lstArgs) psi.ArgumentList.Add(arg);
 
             // start new process
             Process process = new();
@@ -135,6 +112,31 @@ namespace AutoUpdate
             
             Console.WriteLine($"[RESTART] {psi.FileName}");
             return true;
+        }
+
+        private static List<string> GetAllArgs(Func<List<string>> extraArguments = null)
+        {
+            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
+            var arguments = Environment.GetCommandLineArgs();
+
+            //1st argument is always the executable path (see AppCore from MSDN  reference).
+            var args = new List<string>();
+            for (int i = 1; i < arguments.Length; i++)
+            {
+                args.Add(arguments[i]);
+            }
+
+            var extraArgs = extraArguments?.Invoke();
+            if (extraArgs != null)
+            {
+                //keep it clean.
+                foreach (var extraArg in extraArgs)
+                {
+                    if (!args.Contains(extraArg)) args.Add(extraArg);
+                }
+            }
+
+            return args;
         }
 
         public async Task<bool> PublishAvailableAsync(Func<Version, Version, bool> publishMessageContinue=null)
@@ -162,7 +164,12 @@ namespace AutoUpdate
             var localVersion = await GetLocalVersion();
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
-            var currVersion = PackageHelper.CurrentVersionToZip(exePath);
+            var currVersion = await PackageHelper.CurrentVersionToZip(exePath);
+
+            if(currVersion == null)
+            {
+                Console.WriteLine($"[ERROR] Get Zip from {exePath} is nulll");
+            }
 
             await package.SetContentAsync(currVersion, localVersion, onUploadProgress);
             await packageHelper.SetRemoteVersionAsync(localVersion);

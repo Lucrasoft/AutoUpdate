@@ -10,13 +10,8 @@ namespace AutoUpdate.Package
 {
     class DownloadPackage : IPackage
     {
-
-        //TODO centralize this HttpClient. 
-        //private static HttpClient httpClient = new HttpClient();
-
         private readonly Uri downloadurl;
         private Func<Version, Uri> downloadUrlFunc;
-
 
         public DownloadPackage(Uri downloadurl)
         {

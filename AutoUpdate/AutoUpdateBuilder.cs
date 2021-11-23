@@ -49,6 +49,17 @@ namespace AutoUpdate
         }
 
         /// <summary>
+        /// The type of update would infect the way of how the new versions are downloaded.<br/>
+        /// </summary>
+        /// <param name="type">The way how to download new releases</param>
+        /// <returns></returns>
+        public AutoUpdateBuilder SetPackageUpdateType(PackageUpdateEnum type)
+        {
+            packageUpdateType = type;
+            return this;
+        }
+
+        /// <summary>
         /// Manually supply a local version
         /// </summary>
         /// <param name="version"></param>
@@ -100,17 +111,6 @@ namespace AutoUpdate
         public AutoUpdateBuilder RemoteVersion(Uri url)
         {
             this.remote = new UrlVersionProvider(url);
-            return this;
-        }
-
-        /// <summary>
-        /// The type of update would infect the way of how the new versions are downloaded.<br/>
-        /// </summary>
-        /// <param name="type">The way how to download new releases</param>
-        /// <returns></returns>
-        public AutoUpdateBuilder PackageUpdateType(PackageUpdateEnum type)
-        {
-            packageUpdateType = type;
             return this;
         }
 
@@ -195,7 +195,6 @@ namespace AutoUpdate
 
             var owner = urlpaths[0];
             var repo = urlpaths[1];
-
             remote = new GithubVersionProvider(owner, repo);
             package = new GithubPackage(owner, repo);
 

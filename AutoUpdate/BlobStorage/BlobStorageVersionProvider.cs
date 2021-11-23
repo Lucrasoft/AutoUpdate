@@ -45,7 +45,7 @@ namespace AutoUpdate.BlobStorage
 
         public async Task SetVersionAsync(Version version)
         {
-            var file = new JsonVersionObject()
+            var file = new VersionObject()
             {
                 version = PackageUtils.GetVersionString(version)
             };

@@ -20,6 +20,8 @@ namespace AutoUpdate.Provider
             this.repo = repo;
 
             client = new GitHubClient(new ProductHeaderValue(repo));
+
+            // TODO: extend limit call
             //{
             //    // Bypass the limit calls to github.
             //    Credentials = new Credentials(username, password)
@@ -41,8 +43,7 @@ namespace AutoUpdate.Provider
             {
                 Console.WriteLine(
                     $"(GithubVersionProvider::GetVersionAsync) GitHubClient Exception \n" + 
-                    $"[ERROR] Message:{e.Message}\n"// +
-                    // $"StackTrace: {e.StackTrace}"
+                    $"[ERROR] Message:{e.Message}\n"
                 );
             }
 

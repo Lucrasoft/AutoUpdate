@@ -105,12 +105,12 @@ Jan 2021 : First idea's / implementation
 	VOorbeeld: als de nieuwe zip file geen nieuwere versie blijkt te hebben, maar het mechanisme dus blijft update/restraten. 
 	Hoe te voorkomen???
 
-[ ] Library concentreert zich nu op INPLACE (vervangen) 
+[X] Library concentreert zich nu op INPLACE (vervangen) 
     Voor bootstrap projecten zou een SIDEBYSIDE versioning ook handig zijn.
 	Middels de builder kunnen opgeven?
 
 (Updated json data will not been updated ?)
-[X] 
+[ ] 
 	Zou tijdens update ook "merge"  nodig zijn ? 
 	Voorbeeld : dat je bestaande .json bestanden ' merged ' met update json? oorspronkelijk waardes blijven , maar additionele dingen worden samengevoegd? hm. 
 	klinkt alleen niet logisch. ook lastig aan te geven in de zip file misschien?
@@ -127,4 +127,16 @@ Jan 2021 : First idea's / implementation
 		
 [X] UrlVersionProvider could auto-detect the correct VersionReader based on ContentType in HTTP response ?!
   
-[ ] Xml ondersteuning... ooit.. (already done?? check!)
+[X] Xml ondersteuning... ooit.. (already done?? check!)
+
+[ ]  GithubVersionProvider::GitHubClient (octokit)
+		// Bypass the limit calls to github.
+		// Credentials = new Credentials(username, password)
+		
+[ ]  GithubVersionProvider Not Implemented
+		// SetVersionAsync
+		// SetContentAsync
+		
+[ ]  PackageHelper::CurrentVersionToZip && SetVersion 
+		// make extracted zip files into memory (now we download the file and delete it afterwards)
+

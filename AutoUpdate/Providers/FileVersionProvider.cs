@@ -12,9 +12,10 @@ namespace AutoUpdate.Provider
         private string filename;
         private VersionFormat format;
 
-        public FileVersionProvider(string filename)
+        public FileVersionProvider(string filename, VersionFormat format=VersionFormat.AutoDetect)
         {
             this.filename = filename;
+            this.format = format;
         }
   
         public Task<Version> GetVersionAsync()

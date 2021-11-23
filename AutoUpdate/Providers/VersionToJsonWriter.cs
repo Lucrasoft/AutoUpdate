@@ -10,7 +10,7 @@ namespace AutoUpdate.Provider
     {
         public string SetVersion(Version version)
         {
-            var obj = new JsonVersionObject(version);
+            var obj = new VersionObject(version);
             return JsonSerializer.Serialize(obj);
         }
 

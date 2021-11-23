@@ -32,8 +32,8 @@ namespace AutoUpdate.Package
 
             //var bytes = System.IO.File.ReadAllBytes(fname);
             //return Task.FromResult(bytes);
-            using var fsFile = System.IO.File.OpenRead(fname);
-            System.IO.MemoryStream stream = PackageUtils.FillFromRemoteStream(
+            using var fsFile = File.OpenRead(fname);
+            MemoryStream stream = PackageUtils.FillFromRemoteStream(
                 fsFile,
                 fsFile.Length,
                 handler,

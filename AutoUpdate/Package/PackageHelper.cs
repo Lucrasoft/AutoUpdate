@@ -44,43 +44,97 @@ namespace AutoUpdate.Package
 
         // Package
 
-        public static byte[] CurrentVersionToZip(string folderName)
+        public static Stream CompressStreams(IList<Stream> Streams, IList<string> StreamNames, Stream OutputStream = null)
         {
-            // get folder
-            var allFileNames = Directory.GetFiles(folderName);
-            var allFiles = new Dictionary<string, byte[]>();
+            var Response = new MemoryStream();
 
-            foreach (var filename in allFileNames)
+            using (var ZippedFile = new ZipArchive(Response, ZipArchiveMode.Create, true))
             {
-                var data = File.ReadAllBytes(filename);
-                allFiles.Add(filename, data);
-            }
-
-            // compress folder
-            byte[] compressedBytes;
-            using (var outStream = new MemoryStream())
-            {
-                using (var archive = new ZipArchive(outStream, ZipArchiveMode.Create, true))
-                {
-                    foreach (var file in allFiles)
+                for (int i = 0, length = Streams.Count; i < length; i++)
+                    using (var entry = ZippedFile.CreateEntry(StreamNames[i]).Open())
                     {
-                        var fileInArchive = archive.CreateEntry(file.Key, CompressionLevel.Optimal);
-
-                        using var entryStream = fileInArchive.Open();
-                        using var fileToCompressStream = new MemoryStream(file.Value);
-
-                        fileToCompressStream.CopyTo(entryStream);
+                        Streams[i].CopyTo(entry);
                     }
-                }
-                compressedBytes = outStream.ToArray();
+
+            }
+            if (OutputStream != null)
+            {
+                Response.Seek(0, SeekOrigin.Begin);
+                Response.CopyTo(OutputStream);
             }
 
-            return compressedBytes;
+            return Response;
         }
 
-        public bool SetVersion(string folderName, Version version, EventHandler<ProgressDownloadEvent> onDownloadProgress = null)
+        public static async Task<byte[]> CurrentVersionToZip(string folderName)
         {
-            var package = CurrentVersionToZip(folderName);
+            // TODO: Set generated zip into Memory.
+            var zipName = $"{folderName}/../CurrentVersionToZip.zip";
+
+            // create file
+            ZipFile.CreateFromDirectory(folderName, zipName);
+
+            // read file
+            var bytes = await File.ReadAllBytesAsync(zipName);
+            
+            // delete file
+            File.Delete(zipName);
+
+            return bytes;
+
+            ////zip content
+            //using (var ms = new MemoryStream())
+            //{
+            //    using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+            //    {
+            //        foreach (var file in files)
+            //        {
+            //            ZipArchiveEntry orderEntry = archive.CreateEntry(file.Key); //create a file with this name
+            //            using var writer = new BinaryWriter(orderEntry.Open());
+            //            writer.Write(file.Value); //write the binary data
+            //        }
+            //    }
+
+            //    //ZipArchive must be disposed before the MemoryStream has data
+            //    return ms.ToArray();
+            //}
+
+            //return null;
+
+            //// compress folder
+            //byte[] compressedBytes;
+            //using (var outStream = new MemoryStream())
+            //{
+            //    using (var archive = new ZipArchive(outStream, ZipArchiveMode.Create, true))
+            //    {
+            //        var fileInArchive = archive.CreateEntry(rootFolder, CompressionLevel.Optimal);
+
+            //        using var entryStream = fileInArchive.Open();
+            //        using var fileToCompressStream = new MemoryStream(file.Value);
+
+            //        fileToCompressStream.CopyTo(entryStream);
+
+
+            //        //foreach (var file in files)
+            //        //{
+            //        //    var entryName = file.Key.Replace("./", "").Replace(".\\", "").Replace("\\", "/");
+            //        //    var fileInArchive = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+
+            //        //    using var entryStream = fileInArchive.Open();
+            //        //    using var fileToCompressStream = new MemoryStream(file.Value);
+
+            //        //    fileToCompressStream.CopyTo(entryStream);
+            //        //}
+            //    }
+            //    compressedBytes = outStream.ToArray();
+            //}
+
+            //return compressedBytes;
+        }
+
+        public async Task<bool> SetVersion(string folderName, Version version, EventHandler<ProgressDownloadEvent> onDownloadProgress = null)
+        {
+            var package = await CurrentVersionToZip(folderName);
             return SetVersion(package, version, onDownloadProgress);
         }
 
@@ -103,10 +157,7 @@ namespace AutoUpdate.Package
             var oldVersion = PackageUtils.GetVersionString(version);
 
             // remove local `RemoteVersion.exe` file
-            if(File.Exists(remoteExe))
-            {
-                File.Delete(remoteExe);
-            }
+            if(File.Exists(remoteExe)) File.Delete(remoteExe);
 
 
             // return version
@@ -116,7 +167,20 @@ namespace AutoUpdate.Package
                 return false;
             }
 
-            // in-place
+            // set files
+            switch (Updater.PackageUpdateType)
+            {
+                case PackageUpdateEnum.SideBySide:
+                    Path = $"{Path}/../{newVersion}";
+                    break;
+
+                //default:
+                //case PackageUpdateEnum.InPlace:
+                //    Path = $"{Path}";
+                //    break;
+            }
+
+            // save path
             PackageUtils.ExtractArchive(archive, Path, onDownloadProgress);
 
             SaveVersion(oldVersion);
@@ -205,4 +269,5 @@ namespace AutoUpdate.Package
         public async Task<Version> GetRemoteVersionAsync() => await RemoteVersion.GetVersionAsync();
 
     }
+
 }

@@ -13,9 +13,9 @@ namespace AutoUpdate.Provider
         {
             try
             {
-                var xmlSerializer = new XmlSerializer(typeof(JsonVersionObject));
-                using var stringreader = new StringReader(content);
-                var obj = (JsonVersionObject)xmlSerializer.Deserialize(stringreader);
+                var serializer = new XmlSerializer(typeof(VersionObject));
+                using var reader = new StringReader(content);
+                var obj = (VersionObject)serializer.Deserialize(reader);
 
                 return new Version(obj.version);
             }
@@ -23,7 +23,6 @@ namespace AutoUpdate.Provider
             {
                 return new Version(0, 0, 0, 0);
             }
-
         }
 
     }

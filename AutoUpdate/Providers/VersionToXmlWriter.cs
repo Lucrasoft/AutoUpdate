@@ -11,10 +11,10 @@ namespace AutoUpdate.Provider
     {
         public string SetVersion(Version version)
         {
-            var obj = new JsonVersionObject(version);
+            var obj = new VersionObject(version);
 
             using var stringwriter = new System.IO.StringWriter();
-            var serializer = new XmlSerializer(typeof(JsonVersionObject));
+            var serializer = new XmlSerializer(typeof(VersionObject));
             serializer.Serialize(stringwriter, obj);
 
             return stringwriter.ToString();
