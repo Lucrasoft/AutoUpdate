@@ -23,9 +23,8 @@ namespace AutoUpdate
     /// </summary>
     public class AutoUpdateBuilder
     {
-        private HttpClient httpClient = new();
+        private HttpClient httpClient;
         private PackageUpdateEnum packageUpdateType = PackageUpdateEnum.InPlace;
-
         private IVersionProvider local;
         private IVersionProvider remote;
         private IPackage package;

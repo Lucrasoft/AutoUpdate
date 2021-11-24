@@ -28,7 +28,7 @@ namespace AutoUpdate
         /// <summary>
         /// Restart current process. 
         /// </summary>
-        public bool Restart(Func<List<string>> extraArguments = null);
+        public int Restart(Func<List<string>> extraArguments = null, bool hasPrepareTimeThreshold = true);
 
         /// <summary>
         /// Check if publishment is available.

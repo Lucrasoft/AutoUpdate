@@ -15,24 +15,40 @@ namespace AutoUpdate
 {
     internal class Updater : IUpdater
     {
-        public static HttpClient HTTPClient = new();
+        public const string FILENAME = "package_versions.json";
+
+        public static HttpClient HTTPClient;
         public static PackageUpdateEnum PackageUpdateType = PackageUpdateEnum.InPlace;
 
         public event EventHandler<ProgressDownloadEvent> OnDownloadProgress;
+        public event EventHandler<ProgressUploadEvent> OnUploadProgress;
 
+        public string FolderPath { get; private set; }
+        public string VersionFile { get; private set; }
+        public PackageVersionsObject Versions { get; private set; }
+
+        private readonly IVersionProvider local;
+        private readonly IVersionProvider remote;
         private readonly IPackage package;
-        private readonly PackageHelper packageHelper;
+        private readonly PrepareHandler prepare;
 
         //TODO include logger from DI
         //private readonly ILogger<Updater> logger;
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum type, HttpClient client)
         {
+            this.local = local;
+            this.remote = remote;
             this.package = package;
-
-            packageHelper = new(local, remote);
             PackageUpdateType = type;
-            HTTPClient = client;
+            HTTPClient = client ?? new();
+
+            var exe = Process.GetCurrentProcess().MainModule.FileName;
+            FolderPath = Path.GetDirectoryName(exe);
+
+            VersionFile = $"{FolderPath}/../{FILENAME}";
+            Versions = JsonHelper.Read<PackageVersionsObject>(VersionFile);
+            prepare = new PrepareHandler(FolderPath);
         }
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue=null)
@@ -41,7 +57,7 @@ namespace AutoUpdate
             var remoteVersion = await GetRemoteVersion();
 
             // catch failed remote version
-            if(packageHelper.VersionIsFailing(remoteVersion))
+            if(VersionIsFailing(remoteVersion))
             {
                 Console.WriteLine($"[WARNING] Skip version:{remoteVersion} as it failed previously.");
                 return false;
@@ -64,6 +80,13 @@ namespace AutoUpdate
             return false;
         }
 
+        private bool VersionIsFailing(Version version)
+        {
+            string vname = PackageUtils.GetVersionString(version);
+            return Versions.FailedVersions.Contains(vname);
+        }
+
+
         public async Task<bool> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress=null)
         {
             OnDownloadProgress = onDownloadProgress;
@@ -74,7 +97,7 @@ namespace AutoUpdate
             var package = await this.package.GetContentAsync(remoteVersion, OnDownloadProgress);
 
             // set new version
-            var success = packageHelper.SetVersion(package, remoteVersion, OnDownloadProgress);
+            var success = SetVersion(package, remoteVersion, OnDownloadProgress);
             if(!success)
             {
                 Console.WriteLine("[ERROR] remote version do not match with .EXE version!");
@@ -83,61 +106,91 @@ namespace AutoUpdate
             return success;
         }
 
-        public bool Restart(Func<List<string>> extraArguments=null)
+        private bool SetVersion(byte[] package, Version version, EventHandler<ProgressDownloadEvent> onDownloadProgress = null)
+        {
+            var exe = Process.GetCurrentProcess().MainModule.FileName;
+            var exename = System.IO.Path.GetFileName(exe);
+            var remoteExe = $"{FolderPath}\\RemoteVersion.exe";
+
+            // save remote version EXE
+            // TODO: Set into Memory. (Now we create a file)
+            var archive = new ZipArchive(new MemoryStream(package));
+            foreach (ZipArchiveEntry entry in archive.Entries)
+                if (entry.Name == exename)
+                    entry.ExtractToFile(remoteExe, true);
+
+            // check zip version == exe version
+            var versionInfo = FileVersionInfo.GetVersionInfo(remoteExe);
+            var newVersion = PackageUtils.GetVersionString(versionInfo);
+            var oldVersion = PackageUtils.GetVersionString(version);
+
+            // remove local `RemoteVersion.exe` file
+            if (File.Exists(remoteExe)) File.Delete(remoteExe);
+
+
+            // return version
+            if (oldVersion != newVersion)
+            {
+                SaveFailedVersion(oldVersion);
+                return false;
+            }
+
+            // set files
+            FolderPath = PackageUpdateType switch
+            {
+                PackageUpdateEnum.SideBySide => $"{FolderPath}/../{newVersion}",
+                PackageUpdateEnum.InPlace    => $"{FolderPath}",
+                _ => throw new MissingMemberException($"Failed not found {PackageUpdateType}"),
+            };
+
+            // save path
+            PackageUtils.ExtractArchive(archive, FolderPath, onDownloadProgress);
+
+            SaveVersion(oldVersion);
+            return true;
+        }
+        
+        private void SaveVersion(string version)
+        {
+            Versions.Versions.Add(version);
+            JsonHelper.Write(Versions, FILENAME);
+        }
+
+        private void SaveFailedVersion(string version)
+        {
+            Versions.FailedVersions.Add(version);
+            JsonHelper.Write(Versions, FILENAME);
+        }
+
+
+        public int Restart(Func<List<string>> extraArguments = null, bool hasPrepareTimeThreshold = true)
         {
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
 
             // Run: (pre/post)-install.* (.bat / .cmd /.ps /.exe) bestanden
-            packageHelper.RunPreAndPostInstall();
+            var exitCode = prepare.RunPreAndPostInstall(hasPrepareTimeThreshold);
+            if (exitCode != 0) return exitCode;
 
             // In-Place (child process)
             var psi = new ProcessStartInfo
             {
-                FileName = $"{packageHelper.Path}\\{Path.GetFileName(exeFile)}" ,
-                WorkingDirectory = packageHelper.Path
+                FileName = $"{FolderPath}\\{Path.GetFileName(exeFile)}",
+                WorkingDirectory = FolderPath
             };
 
             // all project arguments
-            var lstArgs = GetAllArgs(extraArguments);
+            var lstArgs = PrepareHandler.GetAllArguments(extraArguments);
             foreach (var arg in lstArgs) psi.ArgumentList.Add(arg);
 
             // start new process
-            Process process = new();
-            process.StartInfo = psi;
-            if (!process.Start())
-            {
-                Console.WriteLine($"[RESTART FAILED] {psi.FileName}");
-                return false;
-            }
-            
-            Console.WriteLine($"[RESTART] {psi.FileName}");
-            return true;
+            Console.WriteLine($"[START NEW PROCESS] {psi.FileName}");
+
+            var process = Process.Start(psi);
+            process.WaitForExit();
+
+            return process.ExitCode;
         }
 
-        private static List<string> GetAllArgs(Func<List<string>> extraArguments = null)
-        {
-            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
-            var arguments = Environment.GetCommandLineArgs();
-
-            //1st argument is always the executable path (see AppCore from MSDN  reference).
-            var args = new List<string>();
-            for (int i = 1; i < arguments.Length; i++)
-            {
-                args.Add(arguments[i]);
-            }
-
-            var extraArgs = extraArguments?.Invoke();
-            if (extraArgs != null)
-            {
-                //keep it clean.
-                foreach (var extraArg in extraArgs)
-                {
-                    if (!args.Contains(extraArg)) args.Add(extraArg);
-                }
-            }
-
-            return args;
-        }
 
         public async Task<bool> PublishAvailableAsync(Func<Version, Version, bool> publishMessageContinue=null)
         {
@@ -164,7 +217,7 @@ namespace AutoUpdate
             var localVersion = await GetLocalVersion();
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
-            var currVersion = await PackageHelper.CurrentVersionToZip(exePath);
+            var currVersion = await CurrentVersionToZip(exePath);
 
             if(currVersion == null)
             {
@@ -172,12 +225,81 @@ namespace AutoUpdate
             }
 
             await package.SetContentAsync(currVersion, localVersion, onUploadProgress);
-            await packageHelper.SetRemoteVersionAsync(localVersion);
+            await SetRemoteVersion(localVersion);
         }
 
-        public async Task<Version> GetLocalVersion() => await packageHelper.GetLocalVersionAsync();
+        private async Task SetRemoteVersion(Version version) => await remote.SetVersionAsync(version);
 
-        public async Task<Version> GetRemoteVersion() => await packageHelper.GetRemoteVersionAsync();
+        private static async Task<byte[]> CurrentVersionToZip(string folderName)
+        {
+            // TODO: Set generated zip into Memory.
+            var zipName = $"{folderName}/../CurrentVersionToZip.zip";
+
+            // create file
+            ZipFile.CreateFromDirectory(folderName, zipName);
+
+            // read file
+            var bytes = await File.ReadAllBytesAsync(zipName);
+
+            // delete file
+            File.Delete(zipName);
+
+            return bytes;
+
+            ////zip content
+            //using (var ms = new MemoryStream())
+            //{
+            //    using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+            //    {
+            //        foreach (var file in files)
+            //        {
+            //            ZipArchiveEntry orderEntry = archive.CreateEntry(file.Key); //create a file with this name
+            //            using var writer = new BinaryWriter(orderEntry.Open());
+            //            writer.Write(file.Value); //write the binary data
+            //        }
+            //    }
+
+            //    //ZipArchive must be disposed before the MemoryStream has data
+            //    return ms.ToArray();
+            //}
+
+            //return null;
+
+            //// compress folder
+            //byte[] compressedBytes;
+            //using (var outStream = new MemoryStream())
+            //{
+            //    using (var archive = new ZipArchive(outStream, ZipArchiveMode.Create, true))
+            //    {
+            //        var fileInArchive = archive.CreateEntry(rootFolder, CompressionLevel.Optimal);
+
+            //        using var entryStream = fileInArchive.Open();
+            //        using var fileToCompressStream = new MemoryStream(file.Value);
+
+            //        fileToCompressStream.CopyTo(entryStream);
+
+
+            //        //foreach (var file in files)
+            //        //{
+            //        //    var entryName = file.Key.Replace("./", "").Replace(".\\", "").Replace("\\", "/");
+            //        //    var fileInArchive = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+
+            //        //    using var entryStream = fileInArchive.Open();
+            //        //    using var fileToCompressStream = new MemoryStream(file.Value);
+
+            //        //    fileToCompressStream.CopyTo(entryStream);
+            //        //}
+            //    }
+            //    compressedBytes = outStream.ToArray();
+            //}
+
+            //return compressedBytes;
+        }
+
+
+        public async Task<Version> GetLocalVersion() => await local.GetVersionAsync();
+
+        public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
 
     }
 
