@@ -11,7 +11,7 @@ namespace OtherNamedConsole
 
         static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Hello World! From a branch");
 
             #region generate AutoUpdate (output: au)
             var auBuilder = new AutoUpdateBuilder();
