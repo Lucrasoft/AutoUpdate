@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoUpdate.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -9,13 +10,8 @@ namespace AutoUpdate.Package
 {
     class DownloadPackage : IPackage
     {
-
-        //TODO centralize this HttpClient. 
-        private static HttpClient httpClient = new HttpClient();
-
         private readonly Uri downloadurl;
         private Func<Version, Uri> downloadUrlFunc;
-
 
         public DownloadPackage(Uri downloadurl)
         {
@@ -27,7 +23,7 @@ namespace AutoUpdate.Package
             this.downloadUrlFunc = downloadUrlFunc;
         }
 
-        public async Task<byte[]> GetContentAsync(Version version, Action<string, int> currentOperationTotalPercentDone)
+        public async Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
             var url = downloadurl;
             if (downloadUrlFunc!=null)
@@ -35,7 +31,18 @@ namespace AutoUpdate.Package
                 url = downloadUrlFunc(version);
             };
 
-            return (await PackageUtils.GetMemoryStreamForDownloadUrl(httpClient, url, currentOperationTotalPercentDone)).ToArray();
+            return (await PackageUtils.GetMemoryStreamForDownloadUrlAsync(url, handler)).ToArray();
+        }
+
+        public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        {
+            var url = downloadurl;
+            if (downloadUrlFunc != null)
+            {
+                url = downloadUrlFunc(version);
+            };
+
+            await PackageUtils.PostMemoryStreamToDownloadUrlAsync(new MemoryStream(data), PackageUtils.GetVersionString(version), url, handler);
         }
     }
 }

@@ -5,17 +5,17 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     class FileVersionProvider : IVersionProvider
     {
-
         private string filename;
         private VersionFormat format;
 
-        public FileVersionProvider(string filename, VersionFormat format = VersionFormat.AutoDetect)
+        public FileVersionProvider(string filename, VersionFormat format=VersionFormat.AutoDetect)
         {
             this.filename = filename;
+            this.format = format;
         }
   
         public Task<Version> GetVersionAsync()
@@ -24,9 +24,18 @@ namespace AutoUpdate.Providers
 
             if (format == VersionFormat.AutoDetect)
             {
-                format = VersionFormat.Text;
-                if (filename.EndsWith(".json")) { format = VersionFormat.Json; }
-                if (filename.EndsWith(".xml")) { format = VersionFormat.Xml; }
+                if (filename.EndsWith(".json")) 
+                { 
+                    format = VersionFormat.Json; 
+                }
+                else if (filename.EndsWith(".xml")) 
+                { 
+                    format = VersionFormat.Xml; 
+                }
+                else
+                {
+                    format = VersionFormat.Text;
+                }
             }
 
             var reader = format.GetReader();
@@ -34,6 +43,13 @@ namespace AutoUpdate.Providers
 
             return Task.FromResult(version);
             
+        }
+
+        public async Task SetVersionAsync(Version version)
+        {
+            var writer = format.GetWriter();
+            var content = writer.SetVersion(version);
+            await System.IO.File.WriteAllTextAsync(filename, content);
         }
     }
 }

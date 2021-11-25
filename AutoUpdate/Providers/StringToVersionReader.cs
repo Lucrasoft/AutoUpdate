@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-
-namespace AutoUpdate.Providers
+namespace AutoUpdate.Provider
 {
     public class StringToVersionReader : IVersionReader
     {
