@@ -1,7 +1,7 @@
+using AutoUpdate.Provider;
 using System;
 using Xunit;
 
-using AutoUpdate.Providers;
 
 namespace AutoUpdate.Test
 {
