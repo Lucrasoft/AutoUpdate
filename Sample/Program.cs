@@ -21,8 +21,8 @@ namespace OtherNamedConsole
              auBuilder.SetPackageUpdateType(PackageUpdateEnum.SideBySide);
 
             auBuilder.AddBlobStorage(
-                connectionString: "DefaultEndpointsProtocol=https;AccountName=teststorage777;AccountKey=Tq56DDVRLkmY6S/srcXoGsas6n1ao4fVeYYLdamWvR+Mxih4LZ6H2B3IBH40xv8AUGaAvOidcA+x6CcM9H5hrw==;EndpointSuffix=core.windows.net",
-                container: "releases"
+                connectionString: "XXXX",
+                container: "XXXX"
             );
 
             //auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");

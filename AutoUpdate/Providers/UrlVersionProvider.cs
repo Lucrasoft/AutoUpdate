@@ -47,9 +47,10 @@ namespace AutoUpdate.Provider
             return version;
         }
 
-        public async Task SetVersionAsync(Version version)
+        public Task SetVersionAsync(Version version)
         {
             Console.WriteLine("[WARNING] Set version of URL is not possible");
+            return Task.CompletedTask;
         }
     }
 }

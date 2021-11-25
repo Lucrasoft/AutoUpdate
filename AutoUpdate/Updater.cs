@@ -89,9 +89,12 @@ namespace AutoUpdate
 
         public async Task<bool> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress=null)
         {
-            OnDownloadProgress = onDownloadProgress;
-            try { OnDownloadProgress?.Invoke(this, new("downloading", -1)); }
-            catch (Exception) { }
+            OnDownloadProgress = onDownloadProgress ?? OnDownloadProgress;
+            if (OnDownloadProgress != null)
+            {
+                OnDownloadProgress.Invoke(this, new("downloading", -1));
+            }
+
 
             var remoteVersion = await GetRemoteVersion();
             var package = await this.package.GetContentAsync(remoteVersion, OnDownloadProgress);
@@ -214,23 +217,29 @@ namespace AutoUpdate
 
         public async Task Publish(EventHandler<ProgressUploadEvent> onUploadProgress=null)
         {
+            OnUploadProgress = onUploadProgress ?? OnUploadProgress;
+            if (OnUploadProgress != null)
+            {
+                OnUploadProgress.Invoke(this, new("uploading", -1));
+            }
+
             var localVersion = await GetLocalVersion();
             var exeFile = Process.GetCurrentProcess().MainModule.FileName;
             var exePath = Path.GetDirectoryName(exeFile);
-            var currVersion = await CurrentVersionToZip(exePath);
+            var currVersion = await CurrentVersionToZipAsync(exePath);
 
             if(currVersion == null)
             {
                 Console.WriteLine($"[ERROR] Get Zip from {exePath} is nulll");
             }
 
-            await package.SetContentAsync(currVersion, localVersion, onUploadProgress);
-            await SetRemoteVersion(localVersion);
+            await package.SetContentAsync(currVersion, localVersion, OnUploadProgress);
+            await SetRemoteVersionAsync(localVersion);
         }
 
-        private async Task SetRemoteVersion(Version version) => await remote.SetVersionAsync(version);
+        private async Task SetRemoteVersionAsync(Version version) => await remote.SetVersionAsync(version);
 
-        private static async Task<byte[]> CurrentVersionToZip(string folderName)
+        private static async Task<byte[]> CurrentVersionToZipAsync(string folderName)
         {
             // TODO: Set generated zip into Memory.
             var zipName = $"{folderName}/../CurrentVersionToZip.zip";

@@ -26,10 +26,10 @@ namespace AutoUpdate.GithubRelease
             var release = releases[0];
 
             var downloadUrl = new Uri(release.Assets[0].BrowserDownloadUrl);
-            return (await PackageUtils.GetMemoryStreamForDownloadUrl(downloadUrl, handler)).ToArray();
+            return (await PackageUtils.GetMemoryStreamForDownloadUrlAsync(downloadUrl, handler)).ToArray();
         }
 
-        public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
+        public Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
         {
             //filename = filename.Replace(".zip", "");
             throw new NotImplementedException("[WARNING] Pushing a release to Github is not implemented");

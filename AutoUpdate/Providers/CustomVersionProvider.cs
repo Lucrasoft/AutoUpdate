@@ -19,9 +19,10 @@ namespace AutoUpdate.Provider
             return Task.FromResult(this.version);
         }
 
-        public async Task SetVersionAsync(Version version)
+        public Task SetVersionAsync(Version version)
         {
             this.version = version;
+            return Task.CompletedTask;
         }
     }
 }

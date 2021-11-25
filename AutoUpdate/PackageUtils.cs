@@ -17,7 +17,7 @@ namespace AutoUpdate
     public class PackageUtils
     {
 
-        public static async Task PostMemoryStreamToDownloadUrl(MemoryStream data, string filename, Uri url, EventHandler<ProgressUploadEvent> handler, string operationText = "uploading")
+        public static async Task PostMemoryStreamToDownloadUrlAsync(MemoryStream data, string filename, Uri url, EventHandler<ProgressUploadEvent> handler, string operationText = "uploading")
         {
             filename = Path.GetFileName(filename);
             var name = Path.GetFileNameWithoutExtension(filename);
@@ -32,7 +32,7 @@ namespace AutoUpdate
             var input = await message.Content.ReadAsStringAsync();
         }
 
-        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrl(Uri url, EventHandler<ProgressDownloadEvent> handler, string operationText = "downloading")
+        public static async Task<MemoryStream> GetMemoryStreamForDownloadUrlAsync(Uri url, EventHandler<ProgressDownloadEvent> handler, string operationText = "downloading")
         {
 
             using (HttpResponseMessage response = await Updater.HTTPClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))

@@ -20,7 +20,6 @@ namespace AutoUpdate.Provider
             this.repo = repo;
 
             client = new GitHubClient(new ProductHeaderValue(repo));
-
             // TODO: extend limit call
             //{
             //    // Bypass the limit calls to github.
@@ -50,7 +49,7 @@ namespace AutoUpdate.Provider
             return version;
         }
 
-        public async Task SetVersionAsync(Version version)
+        public Task SetVersionAsync(Version version)
         {
             throw new NotImplementedException("[WARNING] Pushing a version to Github is not implemented");
         }

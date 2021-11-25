@@ -23,10 +23,11 @@ namespace AutoUpdate
         /// Performs an in-place update. 
         /// </summary>
         /// <returns></returns>
+        #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
         public Task<bool> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress = null);
 
         /// <summary>
-        /// Restart current process. 
+        /// Start new process using in-place or side-by-side 
         /// </summary>
         public int Restart(Func<List<string>> extraArguments = null, bool hasPrepareTimeThreshold = true);
 

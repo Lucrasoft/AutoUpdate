@@ -14,10 +14,10 @@ namespace AutoUpdate.Provider
             return Task.FromResult(version);
         }
 
-        public async Task SetVersionAsync(Version version)
+        public Task SetVersionAsync(Version version)
         {
             Console.WriteLine("[WARNING] Set own project version is not possible");
+            return Task.CompletedTask;
         }
-
     }
 }

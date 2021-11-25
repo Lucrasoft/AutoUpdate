@@ -16,7 +16,7 @@ namespace AutoUpdate.Provider
                 VersionObject obj = JsonSerializer.Deserialize<VersionObject>(content);
                 return new Version(obj.version);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new Version(0, 0, 0, 0);
             }

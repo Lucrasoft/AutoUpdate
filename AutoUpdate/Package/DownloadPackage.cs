@@ -31,7 +31,7 @@ namespace AutoUpdate.Package
                 url = downloadUrlFunc(version);
             };
 
-            return (await PackageUtils.GetMemoryStreamForDownloadUrl(url, handler)).ToArray();
+            return (await PackageUtils.GetMemoryStreamForDownloadUrlAsync(url, handler)).ToArray();
         }
 
         public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
@@ -42,7 +42,7 @@ namespace AutoUpdate.Package
                 url = downloadUrlFunc(version);
             };
 
-            await PackageUtils.PostMemoryStreamToDownloadUrl(new MemoryStream(data), PackageUtils.GetVersionString(version), url, handler);
+            await PackageUtils.PostMemoryStreamToDownloadUrlAsync(new MemoryStream(data), PackageUtils.GetVersionString(version), url, handler);
         }
     }
 }
