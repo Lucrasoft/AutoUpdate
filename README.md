@@ -159,3 +159,5 @@ Self-Container exe files are currently NOT supported.
 [ ]  PackageHelper::CurrentVersionToZip && SetVersion  
 // make extracted zip files into memory (now we download the file and delete it afterwards)
 
+[ ] TeamCityVersionProvider version:
+    0.1.0-develop.29 is not correct and have to change to 0.1.29.0 [{major}.{minor}.{build}.{revision}]

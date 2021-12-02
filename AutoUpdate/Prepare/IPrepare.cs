@@ -8,8 +8,8 @@ namespace AutoUpdate.Models
 {
     public interface IPrepare
     {
-        string Extention { get; }
+        string Extension { get; set; }
 
-        int Execute(string command);
+        string GetCommand(string command);
     }
 }

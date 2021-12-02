@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AutoUpdate.Models;
+using AutoUpdate.Prepare;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +17,14 @@ namespace AutoUpdate
         private const int ERROR_TIME_THRESHOLD = 60000;
         private const int ERROR_TIME_EXITCODE = 1337;
 
+        private static readonly List<PrepareItem> PrepareItems = new()
+        {
+            new PrepareItem("ps1", (path) => new PsPrepare(path)),
+            new PrepareItem("bat", (path) => new BatPrepare()),
+            new PrepareItem("cmd", (path) => new CmdPrepare()),
+            new PrepareItem("exe", (path) => new ExePrepare()),
+        };
+
         public string FolderPath { get; private set; }
 
         public PrepareHandler(string path)
@@ -26,33 +36,54 @@ namespace AutoUpdate
         {
             int exitCode = 0;
 
-
             foreach (var name in Directory.GetFiles(FolderPath))
             {
-                var filename = Path.GetFileNameWithoutExtension(name).ToLower();
-                var ext = Path.GetExtension(name).ToLower();
+                // filter untill valid filename
+                (var filename, var ext) = GetFilenameAndExtention(name);
+                if (ext == null) continue;
 
-                var type = "";
-                var matchExt = ext.Contains("ps") || ext.Contains("bat") || ext.Contains("cmd") || ext.Contains("exe");
-                if (filename.Contains(PRE_INSTALL)) type = "PRE";
-                else if (filename.Contains(POST_INSTALL)) type = "POST";
+                var installName = FilenameContainsString(filename);
+                if (installName == null) continue;
 
-                // skip invalid filenames
-                if (type.Length == 0 || !matchExt) continue;
-
-                // execute
-                Console.WriteLine($"\n[Run {type}-INSTALL] {filename}{ext}");
-                if (ext.Contains("ps"))
+                var prepare = GetPrepare(ext);
+                if (prepare == null)
                 {
-                    // powershell script on command prompt (incl. bypass execution-policy)
-                    filename = $"PowerShell.exe -command \"cd {FolderPath}; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; {filename}\"";
+                    throw new ArgumentNullException($"Missing extention Attribute named: {ext}");
                 }
 
-                exitCode = ExecuteCommand(filename, hasTimeThreshold);
-                if (exitCode != 0) break;
+                // get specific filename
+                var command = prepare.GetCommand(filename);
+
+                // run pre/build script before download
+                Console.WriteLine($"\n[Run script: {installName}] cmd:{command}");
+                exitCode = ExecuteCommand(command, hasTimeThreshold);
+                if (exitCode != 0) return exitCode;
             }
 
             return exitCode;
+        }
+
+        private static (string, string) GetFilenameAndExtention(string name)
+        {
+            var filename = Path.GetFileNameWithoutExtension(name).ToLower();
+            var ext = Path.GetExtension(name).ToLower().Split(".")[^1];
+            return (filename, ext);
+        }
+
+        private static string FilenameContainsString(string filename)
+        {
+            filename = filename.ToLower();
+
+            if (filename.Contains(PRE_INSTALL))
+            {
+                return PRE_INSTALL;
+            }
+            else if (filename.Contains(POST_INSTALL))
+            {
+                return POST_INSTALL;
+            }
+
+            return null;
         }
 
         private static int ExecuteCommand(string command, bool hasTimeThreshold)
@@ -95,29 +126,20 @@ namespace AutoUpdate
             return exitCode;
         }
 
-        public static List<string> GetAllArguments(Func<List<string>> extraArguments = null)
+        private IPrepare GetPrepare(string ext)
         {
-            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
-            var arguments = Environment.GetCommandLineArgs();
+            ext = ext.ToLower();
 
-            //1st argument is always the executable path (see AppCore from MSDN  reference).
-            var args = new List<string>();
-            for (int i = 1; i < arguments.Length; i++)
+            foreach (var item in PrepareItems)
             {
-                args.Add(arguments[i]);
-            }
-
-            var extraArgs = extraArguments?.Invoke();
-            if (extraArgs != null)
-            {
-                //keep it clean.
-                foreach (var extraArg in extraArgs)
+                var ext_item = item.Extension.ToLower();
+                if (ext.Contains(ext_item))
                 {
-                    if (!args.Contains(extraArg)) args.Add(extraArg);
+                    return item.Create(FolderPath);
                 }
             }
 
-            return args;
+            return null;
         }
 
     }

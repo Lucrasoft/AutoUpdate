@@ -3,12 +3,15 @@ using AutoUpdate.GithubRelease;
 using AutoUpdate.Models;
 using AutoUpdate.Package;
 using AutoUpdate.Provider;
+using AutoUpdate.TeamCity;
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using FluentTc;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Octokit;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -196,6 +199,18 @@ namespace AutoUpdate
             var repo = urlpaths[1];
             remote = new GithubVersionProvider(owner, repo);
             package = new GithubPackage(owner, repo);
+
+            return this;
+        }
+
+
+        public AutoUpdateBuilder AddTeamCity(
+            string website = "teamcity.lucrasoft.nl",
+            string token = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi",
+            string buildTypeId = "AfasSystems_DevelopmentBuilds"
+        ) {
+            remote = new TeamCityVersionProvider(website, token, buildTypeId);
+            package = new TeamCityPackage(website, token, buildTypeId);
 
             return this;
         }

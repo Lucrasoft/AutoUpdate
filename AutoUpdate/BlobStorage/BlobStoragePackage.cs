@@ -36,7 +36,7 @@ namespace AutoUpdate.BlobStorage
 
         public async Task SetContentAsync(byte[] data, Version version, EventHandler<ProgressUploadEvent> handler)
         {
-            var stream = new MemoryStream();
+            using var stream = new MemoryStream();
             await stream.WriteAsync(data.AsMemory(0, data.Length));
             stream.Position = 0;
 
