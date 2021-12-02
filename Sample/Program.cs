@@ -49,7 +49,8 @@ namespace OtherNamedConsole
             {
                 Console.WriteLine("AutoUpdate: found new version. Updating...");
 
-                if (await au.Update())
+                var result = await au.Update();
+                if (result == 0)
                 {
                     return au.Restart();
                 }
