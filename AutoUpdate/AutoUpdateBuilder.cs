@@ -3,12 +3,15 @@ using AutoUpdate.GithubRelease;
 using AutoUpdate.Models;
 using AutoUpdate.Package;
 using AutoUpdate.Provider;
+using AutoUpdate.TeamCity;
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using FluentTc;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Octokit;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,7 +43,6 @@ namespace AutoUpdate
         /// Set HttpClient than the whole application contains the same configurations.
         /// </summary>
         /// <param name="client">The HttpClient that will been used globally</param>
-        /// <returns></returns>
         public AutoUpdateBuilder SetHttpClient(HttpClient client)
         {
             httpClient = client;
@@ -51,7 +53,6 @@ namespace AutoUpdate
         /// The type of update would infect the way of how the new versions are downloaded.<br/>
         /// </summary>
         /// <param name="type">The way how to download new releases</param>
-        /// <returns></returns>
         public AutoUpdateBuilder SetPackageUpdateType(PackageUpdateEnum type)
         {
             packageUpdateType = type;
@@ -62,7 +63,6 @@ namespace AutoUpdate
         /// Manually supply a local version
         /// </summary>
         /// <param name="version"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder LocalVersion(Version version)
         {
             this.local = new CustomVersionProvider(version);
@@ -73,7 +73,6 @@ namespace AutoUpdate
         /// A file containing the version information
         /// </summary>
         /// <param name="filename"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder LocalVersion(string filename)
         {
             this.local = new FileVersionProvider(filename);
@@ -84,7 +83,6 @@ namespace AutoUpdate
         /// Manully supply a remote version.
         /// </summary>
         /// <param name="version"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder RemoteVersion(Version version)
         {
             this.remote = new CustomVersionProvider(version);
@@ -95,7 +93,6 @@ namespace AutoUpdate
         /// A file containing the version information.
         /// </summary>
         /// <param name="filename"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder RemoteVersion(string filename)
         {
             this.remote = new FileVersionProvider(filename);
@@ -106,7 +103,6 @@ namespace AutoUpdate
         /// A HTTP URI which returns the version information
         /// </summary>
         /// <param name="url"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder RemoteVersion(Uri url)
         {
             this.remote = new UrlVersionProvider(url);
@@ -117,7 +113,6 @@ namespace AutoUpdate
         /// Provide a HTTP URI which contents should contain a zip archive.
         /// </summary>
         /// <param name="url"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder AddPackage(Uri url)
         {
             package = new DownloadPackage(url);
@@ -128,7 +123,6 @@ namespace AutoUpdate
         /// Provide a version-controlled HTTP URI. The URI should give back a zip archive as content.
         /// </summary>
         /// <param name="UrlFunction"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder AddPackage(Func<Version, Uri> UrlFunction) 
         {
             package = new DownloadPackage(UrlFunction);
@@ -139,7 +133,6 @@ namespace AutoUpdate
         /// Provide the content of a zip archive.
         /// </summary>
         /// <param name="zipContents"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder AddPackage(byte[] zipContents)
         {
             package = new CustomPackage(zipContents);
@@ -150,7 +143,6 @@ namespace AutoUpdate
         /// Provide the name of a zip file.
         /// </summary>
         /// <param name="filename"></param>
-        /// <returns></returns>
         public AutoUpdateBuilder AddPackage(string filename)
         {
             package = new FilePackage(filename);
@@ -162,7 +154,6 @@ namespace AutoUpdate
         /// </summary>
         /// <param name="connectionString">Connection string of storage account.</param>
         /// <param name="container">Blob container name.</param>
-        /// <returns>AutoUpdateBuilder class</returns>
         public AutoUpdateBuilder AddBlobStorage(string connectionString, string container)
         {
             var blobServiceClient = new BlobServiceClient(connectionString);
@@ -175,10 +166,9 @@ namespace AutoUpdate
         }
 
         /// <summary>
-        /// Can use a global HttpClient than can contain settings.
+        /// Can use github release to download current version from.
         /// </summary>
         /// <param name="url">Github repo url.</param>
-        /// <returns>AutoUpdateBuilder class</returns>
         public AutoUpdateBuilder AddGithub(string url)
         {
             var uri = new Uri(url);
@@ -196,6 +186,20 @@ namespace AutoUpdate
             var repo = urlpaths[1];
             remote = new GithubVersionProvider(owner, repo);
             package = new GithubPackage(owner, repo);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Can use team city to download current version from.
+        /// </summary>
+        /// <param name="website">The TeamCity domain (sample: "teamcity.website.nl")</param>
+        /// <param name="token">The token to access project in TeamCity.</param>
+        /// <param name="buildTypeId">Chosen type of build to use</param>
+        public AutoUpdateBuilder AddTeamCity(string website, string token , string buildTypeId) 
+        {
+            remote = new TeamCityVersionProvider(website, token, buildTypeId);
+            package = new TeamCityPackage(website, token, buildTypeId);
 
             return this;
         }

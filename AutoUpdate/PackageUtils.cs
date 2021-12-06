@@ -140,7 +140,7 @@ namespace AutoUpdate
         {
             var s = JsonConvert.SerializeObject(obj);
 
-            var stream = new MemoryStream();
+            using var stream = new MemoryStream();
             var writer = new StreamWriter(stream);
             writer.Write(s);
             writer.Flush();

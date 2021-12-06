@@ -87,14 +87,13 @@ namespace AutoUpdate
         }
 
 
-        public async Task<bool> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress=null)
+        public async Task<int> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress=null)
         {
             OnDownloadProgress = onDownloadProgress ?? OnDownloadProgress;
             if (OnDownloadProgress != null)
             {
                 OnDownloadProgress.Invoke(this, new("downloading", -1));
             }
-
 
             var remoteVersion = await GetRemoteVersion();
             var package = await this.package.GetContentAsync(remoteVersion, OnDownloadProgress);
@@ -104,22 +103,23 @@ namespace AutoUpdate
             if(!success)
             {
                 Console.WriteLine("[ERROR] remote version do not match with .EXE version!");
+                return -1;
             }
 
-            return success;
+            return 0;
         }
 
         private bool SetVersion(byte[] package, Version version, EventHandler<ProgressDownloadEvent> onDownloadProgress = null)
         {
             var exe = Process.GetCurrentProcess().MainModule.FileName;
-            var exename = System.IO.Path.GetFileName(exe);
-            var remoteExe = $"{FolderPath}\\RemoteVersion.exe";
+            var exename = Path.GetFileName(exe);
+            var remoteExe = $"{Path.GetTempPath()}RemoteVersion.exe";
 
             // save remote version EXE
-            // TODO: Set into Memory. (Now we create a file)
+            // TODO: Set into Memory (now set file into temp folder)
             var archive = new ZipArchive(new MemoryStream(package));
-            foreach (ZipArchiveEntry entry in archive.Entries)
-                if (entry.Name == exename)
+            foreach (ZipArchiveEntry entry in archive.Entries) 
+                if (entry.Name == exename) 
                     entry.ExtractToFile(remoteExe, true);
 
             // check zip version == exe version
@@ -129,7 +129,6 @@ namespace AutoUpdate
 
             // remove local `RemoteVersion.exe` file
             if (File.Exists(remoteExe)) File.Delete(remoteExe);
-
 
             // return version
             if (oldVersion != newVersion)
@@ -182,7 +181,7 @@ namespace AutoUpdate
             };
 
             // all project arguments
-            var lstArgs = PrepareHandler.GetAllArguments(extraArguments);
+            var lstArgs = GetAllArguments(extraArguments);
             foreach (var arg in lstArgs) psi.ArgumentList.Add(arg);
 
             // start new process
@@ -237,12 +236,13 @@ namespace AutoUpdate
             await SetRemoteVersionAsync(localVersion);
         }
 
+
         private async Task SetRemoteVersionAsync(Version version) => await remote.SetVersionAsync(version);
 
         private static async Task<byte[]> CurrentVersionToZipAsync(string folderName)
         {
             // TODO: Set generated zip into Memory.
-            var zipName = $"{folderName}/../CurrentVersionToZip.zip";
+            var zipName = $"{Path.GetTempPath()}CurrentVersionToZip.zip";
 
             // create file
             ZipFile.CreateFromDirectory(folderName, zipName);
@@ -254,61 +254,36 @@ namespace AutoUpdate
             File.Delete(zipName);
 
             return bytes;
-
-            ////zip content
-            //using (var ms = new MemoryStream())
-            //{
-            //    using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
-            //    {
-            //        foreach (var file in files)
-            //        {
-            //            ZipArchiveEntry orderEntry = archive.CreateEntry(file.Key); //create a file with this name
-            //            using var writer = new BinaryWriter(orderEntry.Open());
-            //            writer.Write(file.Value); //write the binary data
-            //        }
-            //    }
-
-            //    //ZipArchive must be disposed before the MemoryStream has data
-            //    return ms.ToArray();
-            //}
-
-            //return null;
-
-            //// compress folder
-            //byte[] compressedBytes;
-            //using (var outStream = new MemoryStream())
-            //{
-            //    using (var archive = new ZipArchive(outStream, ZipArchiveMode.Create, true))
-            //    {
-            //        var fileInArchive = archive.CreateEntry(rootFolder, CompressionLevel.Optimal);
-
-            //        using var entryStream = fileInArchive.Open();
-            //        using var fileToCompressStream = new MemoryStream(file.Value);
-
-            //        fileToCompressStream.CopyTo(entryStream);
-
-
-            //        //foreach (var file in files)
-            //        //{
-            //        //    var entryName = file.Key.Replace("./", "").Replace(".\\", "").Replace("\\", "/");
-            //        //    var fileInArchive = archive.CreateEntry(entryName, CompressionLevel.Optimal);
-
-            //        //    using var entryStream = fileInArchive.Open();
-            //        //    using var fileToCompressStream = new MemoryStream(file.Value);
-
-            //        //    fileToCompressStream.CopyTo(entryStream);
-            //        //}
-            //    }
-            //    compressedBytes = outStream.ToArray();
-            //}
-
-            //return compressedBytes;
         }
-
 
         public async Task<Version> GetLocalVersion() => await local.GetVersionAsync();
 
         public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
+
+        public static List<string> GetAllArguments(Func<List<string>> extraArguments = null)
+        {
+            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
+            var arguments = Environment.GetCommandLineArgs();
+
+            //1st argument is always the executable path (see AppCore from MSDN  reference).
+            var args = new List<string>();
+            for (int i = 1; i < arguments.Length; i++)
+            {
+                args.Add(arguments[i]);
+            }
+
+            var extraArgs = extraArguments?.Invoke();
+            if (extraArgs != null)
+            {
+                //keep it clean.
+                foreach (var extraArg in extraArgs)
+                {
+                    if (!args.Contains(extraArg)) args.Add(extraArg);
+                }
+            }
+
+            return args;
+        }
 
     }
 }

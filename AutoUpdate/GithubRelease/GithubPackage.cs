@@ -23,9 +23,24 @@ namespace AutoUpdate.GithubRelease
         public async Task<byte[]> GetContentAsync(Version version, EventHandler<ProgressDownloadEvent> handler)
         {
             var releases = await client.Repository.Release.GetAll(owner, repo);
-            var release = releases[0];
+            if(releases == null || releases.Count == 0 )
+            {
+                throw new ArgumentOutOfRangeException("No github release has been found.");
+            }
 
-            var downloadUrl = new Uri(release.Assets[0].BrowserDownloadUrl);
+            var release = releases[0];
+            if(release.Assets != null && release.Assets.Count == 0)
+            {
+                throw new ArgumentOutOfRangeException("Has not found any github release assets.");
+            }
+
+            var asset = release.Assets[0];
+            if (asset.BrowserDownloadUrl != null)
+            {
+                throw new MissingMemberException("Has not found the Uro of the github release assets.");
+            }
+
+            var downloadUrl = new Uri(asset.BrowserDownloadUrl);
             return (await PackageUtils.GetMemoryStreamForDownloadUrlAsync(downloadUrl, handler)).ToArray();
         }
 

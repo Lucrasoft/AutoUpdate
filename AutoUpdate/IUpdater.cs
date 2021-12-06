@@ -24,7 +24,7 @@ namespace AutoUpdate
         /// </summary>
         /// <returns></returns>
         #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
-        public Task<bool> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress = null);
+        public Task<int> Update(EventHandler<ProgressDownloadEvent> onDownloadProgress = null);
 
         /// <summary>
         /// Start new process using in-place or side-by-side 

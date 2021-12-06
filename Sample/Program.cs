@@ -20,10 +20,23 @@ namespace OtherNamedConsole
 
              auBuilder.SetPackageUpdateType(PackageUpdateEnum.SideBySide);
 
-            auBuilder.AddBlobStorage(
-                connectionString: "XXXX",
-                container: "XXXX"
-            );
+            //auBuilder.AddBlobStorage(
+            //    connectionString: "DefaultEndpointsProtocol=https;AccountName=teststorage777;AccountKey=Tq56DDVRLkmY6S/srcXoGsas6n1ao4fVeYYLdamWvR+Mxih4LZ6H2B3IBH40xv8AUGaAvOidcA+x6CcM9H5hrw==;EndpointSuffix=core.windows.net",
+            //    container: "releases"
+            //);
+
+
+
+
+
+
+
+
+            string website = "teamcity.lucrasoft.nl";
+            string token = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
+            string buildTypeId = "AfasSystems_DevelopmentBuilds";
+
+            auBuilder.AddTeamCity(website, token, buildTypeId);
 
             //auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");
 
@@ -46,7 +59,8 @@ namespace OtherNamedConsole
             {
                 Console.WriteLine("AutoUpdate: found new version. Updating...");
 
-                if (await au.Update())
+                var result = await au.Update();
+                if (result == 0)
                 {
                     return au.Restart();
                 }
