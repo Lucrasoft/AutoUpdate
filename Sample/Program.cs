@@ -26,7 +26,17 @@ namespace OtherNamedConsole
             //);
 
 
-            auBuilder.AddTeamCity();
+
+
+
+
+
+
+            string website = "teamcity.lucrasoft.nl";
+            string token = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
+            string buildTypeId = "AfasSystems_DevelopmentBuilds";
+
+            auBuilder.AddTeamCity(website, token, buildTypeId);
 
             //auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");
 
