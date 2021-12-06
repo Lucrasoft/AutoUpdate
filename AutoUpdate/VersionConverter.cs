@@ -35,9 +35,8 @@ namespace AutoUpdate.TeamCity
 
             var major = int.Parse(parts[0]);
             var minor = int.Parse(parts[1]);
+            var patch = int.Parse(line[0]);// suffix = line[1];
             var build = int.Parse(parts[3]);
-            var patch = int.Parse(line[0]);
-            //var suffix = line[1];
 
             return new Version(major, minor, patch, build);
         }
