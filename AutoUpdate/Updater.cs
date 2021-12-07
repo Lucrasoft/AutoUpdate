@@ -1,6 +1,7 @@
 ﻿using AutoUpdate.Models;
 using AutoUpdate.Package;
 using AutoUpdate.Provider;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,25 +31,24 @@ namespace AutoUpdate
         private readonly IVersionProvider local;
         private readonly IVersionProvider remote;
         private readonly IPackage package;
+        private readonly ILogger logger;
         private readonly PrepareHandler prepare;
 
-        //TODO include logger from DI
-        //private readonly ILogger<Updater> logger;
-
-        public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum type, HttpClient client)
+        public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum updateType, HttpClient client, ILogger logger)
         {
             this.local = local;
             this.remote = remote;
             this.package = package;
-            PackageUpdateType = type;
+            PackageUpdateType = updateType;
             HTTPClient = client ?? new();
+            this.logger = logger;
 
             var exe = Process.GetCurrentProcess().MainModule.FileName;
             FolderPath = Path.GetDirectoryName(exe);
 
             VersionFile = $"{FolderPath}/../{FILENAME}";
             Versions = JsonHelper.Read<PackageVersionsObject>(VersionFile);
-            prepare = new PrepareHandler(FolderPath);
+            prepare = new PrepareHandler(FolderPath, logger);
         }
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue=null)
@@ -59,11 +59,12 @@ namespace AutoUpdate
             // catch failed remote version
             if(VersionIsFailing(remoteVersion))
             {
-                Console.WriteLine($"[WARNING] Skip version:{remoteVersion} as it failed previously.");
+                logger.LogWarning($"Skip version:{remoteVersion} as it failed previously.");
                 return false;
             }
 
-            // Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
+            logger.LogDebug($"Local version:{localVersion}");
+            logger.LogDebug($"Remote version:{remoteVersion}");
 
             if (remoteVersion > localVersion)
             {
@@ -102,7 +103,7 @@ namespace AutoUpdate
             var success = SetVersion(package, remoteVersion, OnDownloadProgress);
             if(!success)
             {
-                Console.WriteLine("[ERROR] remote version do not match with .EXE version!");
+                logger.LogError("Remote version do not match with .EXE version!");
                 return -1;
             }
 
@@ -181,11 +182,11 @@ namespace AutoUpdate
             };
 
             // all project arguments
-            var lstArgs = GetAllArguments(extraArguments);
-            foreach (var arg in lstArgs) psi.ArgumentList.Add(arg);
+            var args = new ArgumentsContext(extraArguments);
+            args.SetAsCollection(psi.ArgumentList);
 
             // start new process
-            Console.WriteLine($"[START NEW PROCESS] {psi.FileName}");
+            logger.LogInformation($"[START NEW PROCESS] {psi.FileName}");
 
             var process = Process.Start(psi);
             process.WaitForExit();
@@ -199,7 +200,8 @@ namespace AutoUpdate
             var localVersion = await GetLocalVersion();
             var remoteVersion = await GetRemoteVersion();
 
-            // Console.WriteLine($"[local version:{localVersion} <-> remote version:{remoteVersion}]");
+            logger.LogDebug($"Local version:{localVersion}");
+            logger.LogDebug($"Remote version:{remoteVersion}");
 
             bool publishing = false;
             if (remoteVersion < localVersion)
@@ -229,7 +231,7 @@ namespace AutoUpdate
 
             if(currVersion == null)
             {
-                Console.WriteLine($"[ERROR] Get Zip from {exePath} is nulll");
+                logger.LogError($"[ERROR] Get Zip from {exePath} is nulll");
             }
 
             await package.SetContentAsync(currVersion, localVersion, OnUploadProgress);
@@ -259,31 +261,6 @@ namespace AutoUpdate
         public async Task<Version> GetLocalVersion() => await local.GetVersionAsync();
 
         public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
-
-        public static List<string> GetAllArguments(Func<List<string>> extraArguments = null)
-        {
-            //starts the (hopefully correcly updated) process using the original executable name startup arguments.
-            var arguments = Environment.GetCommandLineArgs();
-
-            //1st argument is always the executable path (see AppCore from MSDN  reference).
-            var args = new List<string>();
-            for (int i = 1; i < arguments.Length; i++)
-            {
-                args.Add(arguments[i]);
-            }
-
-            var extraArgs = extraArguments?.Invoke();
-            if (extraArgs != null)
-            {
-                //keep it clean.
-                foreach (var extraArg in extraArgs)
-                {
-                    if (!args.Contains(extraArg)) args.Add(extraArg);
-                }
-            }
-
-            return args;
-        }
 
     }
 

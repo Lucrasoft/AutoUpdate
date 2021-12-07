@@ -1,5 +1,6 @@
 ﻿using AutoUpdate;
 using AutoUpdate.Models;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -11,6 +12,12 @@ namespace OtherNamedConsole
 
         static async Task<int> Main(string[] args)
         {
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+
+            // var serviceProvider = serviceCollection.BuildServiceProvider();
+
+
             Console.WriteLine("Hello World! From a branch");
 
             #region generate AutoUpdate (output: au)
@@ -18,7 +25,9 @@ namespace OtherNamedConsole
 
             // auBuilder.SetHttpClient(new HttpClient());
 
-             auBuilder.SetPackageUpdateType(PackageUpdateEnum.SideBySide);
+            // auBuilder.AddUpdateType(PackageUpdateEnum.SideBySide);
+
+            //auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");
 
             //auBuilder.AddBlobStorage(
             //    connectionString: "DefaultEndpointsProtocol=https;AccountName=teststorage777;AccountKey=Tq56DDVRLkmY6S/srcXoGsas6n1ao4fVeYYLdamWvR+Mxih4LZ6H2B3IBH40xv8AUGaAvOidcA+x6CcM9H5hrw==;EndpointSuffix=core.windows.net",
@@ -52,9 +61,7 @@ namespace OtherNamedConsole
 
             var au = auBuilder.Build();
             #endregion
-
-
-            // Update
+            //Update
             if (await au.UpdateAvailableAsync())
             {
                 Console.WriteLine("AutoUpdate: found new version. Updating...");
@@ -64,6 +71,7 @@ namespace OtherNamedConsole
                 {
                     return au.Restart();
                 }
+
             }
             else
             {
@@ -83,6 +91,15 @@ namespace OtherNamedConsole
             //}
 
             return 0;
+        }
+
+
+
+
+
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            //we will configure logging here
         }
 
     }

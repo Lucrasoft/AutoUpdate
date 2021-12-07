@@ -11,42 +11,16 @@ namespace AutoUpdate.TeamCity
 {
     public class TeamCityVersionProvider : IVersionProvider
     {
-        private readonly string Host;
-        private readonly string Token;
-        private readonly string BuildTypeID;
+        private readonly ITeamCityApi _client;
 
-        public TeamCityVersionProvider(string host, string token, string buildTypeId)
+        public TeamCityVersionProvider(ITeamCityApi client)
         {
-            Host = host;
-            Token = token;
-            BuildTypeID = buildTypeId;
+            _client = client;
         }
 
         public async Task<Version> GetVersionAsync()
         {
-            // Get last build
-            var url = $"https://{Host}/app/rest/buildTypes/id:{BuildTypeID}/builds/running:false,status:success";
-            var response = HttpRequest(url);
-            if (!response.IsSuccessful)
-            {
-                throw new Exception($"There is no build available. id:{BuildTypeID} on url:{url}");
-            }
-
-            // Get version number
-            var lastBuild = JsonConvert.DeserializeObject<LastBuild>(response.Content);
-            return VersionConverter.Getversion(lastBuild.number);
-        }
-
-        private IRestResponse HttpRequest(string url)
-        {
-            var client = new RestClient(url)
-            {
-                Timeout = -1
-            };
-
-            var request = new RestRequest(Method.GET);
-            request.AddHeader("Authorization", $"Bearer {Token}");
-            return client.Execute(request);
+            return _client.GetLatestVersion();
         }
 
         public async Task SetVersionAsync(Version version)
