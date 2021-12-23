@@ -16,7 +16,6 @@ namespace AutoUpdate
 {
     public class PackageUtils
     {
-
         public static async Task PostMemoryStreamToDownloadUrlAsync(MemoryStream data, string filename, Uri url, EventHandler<ProgressUploadEvent> handler, string operationText = "uploading")
         {
             filename = Path.GetFileName(filename);
@@ -96,6 +95,7 @@ namespace AutoUpdate
 
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
+                // Get Filename
                 string destinationPath = Path.GetFullPath(Path.Combine(installationPath, entry.FullName));
                 Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)); // Create directory if it doesn't already exist
 
@@ -108,12 +108,12 @@ namespace AutoUpdate
                 }
                 catch (IOException)
                 {
-                    //Hm.. It is probably locked. So we rename this file to .old and try again!
+                    // Hm.. It is probably locked. So we rename this file to .old and try again!
                     string oldFilename = destinationPath + ".old";
                     if (File.Exists(oldFilename)) { File.Delete(oldFilename); }
                     File.Move(destinationPath, destinationPath + ".old");
 
-                    //try again!
+                    // try again!
                     entry.ExtractToFile(destinationPath, true);
                 }
                 finally
@@ -159,7 +159,6 @@ namespace AutoUpdate
 
             return $"{major}.{minor}.{build}.{revision}";
         }
-
 
     }
 }

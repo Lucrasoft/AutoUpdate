@@ -12,16 +12,14 @@ namespace OtherNamedConsole
 
         static async Task<int> Main(string[] args)
         {
-            var serviceCollection = new ServiceCollection();
-            ConfigureServices(serviceCollection);
-
+            //var serviceCollection = new ServiceCollection();
+            //ConfigureServices(serviceCollection);
             // var serviceProvider = serviceCollection.BuildServiceProvider();
+            
+            //Console.WriteLine("Hello World! From a branch");
 
-
-            Console.WriteLine("Hello World! From a branch");
-
-            #region generate AutoUpdate (output: au)
-            var auBuilder = new AutoUpdateBuilder();
+            //#region generate AutoUpdate (output: au)
+            //var auBuilder = new AutoUpdateBuilder();
 
             // auBuilder.SetHttpClient(new HttpClient());
 
@@ -34,49 +32,51 @@ namespace OtherNamedConsole
             //    container: "releases"
             //);
 
+            //string website = "teamcity.lucrasoft.nl";
+            //string token = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
+            //string buildTypeId = "AfasSystems_DevelopmentBuilds";
+
+            //auBuilder.AddTeamCity(website, token, buildTypeId);
+
+            ////auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");
+
+            ////auBuilder.AddPackage(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\1.0.38.0.zip");
+            //////auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.xml");
+            //////auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.txt");
+            ////auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.json");
+            ////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.xml");
+            //////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.txt");
+            //////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.json");
 
 
 
+            //var au = auBuilder.Build();
+            ////#endregion
+            //////Update
+            ////if (await au.UpdateAvailableAsync())
+            ////{
+            ////    Console.WriteLine("AutoUpdate: found new version. Updating...");
+            ///
 
+            var tcWebsite = "teamcity.lucrasoft.nl";
+            var tcToken = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
+            var tcBuildTypeID = "AfasSystems_DevelopmentBuilds";
+            var au = new AutoUpdateBuilder()
+                .AddUpdateType(PackageUpdateEnum.SideBySide)
+                .AddTeamCity(tcWebsite, tcToken, tcBuildTypeID)
+                .Build();
 
-
-
-            string website = "teamcity.lucrasoft.nl";
-            string token = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
-            string buildTypeId = "AfasSystems_DevelopmentBuilds";
-
-            auBuilder.AddTeamCity(website, token, buildTypeId);
-
-            //auBuilder.AddGithub("https://github.com/niektuytel/HelloRelease");
-
-            //auBuilder.AddPackage(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\1.0.38.0.zip");
-            ////auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.xml");
-            ////auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.txt");
-            //auBuilder.LocalVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.json");
-            //auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.xml");
-            ////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.txt");
-            ////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.json");
-
-
-
-            var au = auBuilder.Build();
-            #endregion
-            //Update
-            if (await au.UpdateAvailableAsync())
+            var result = await au.Update();
+            if (result == 0)
             {
-                Console.WriteLine("AutoUpdate: found new version. Updating...");
-
-                var result = await au.Update();
-                if (result == 0)
-                {
-                    return au.Restart();
-                }
-
+                return au.Restart();
             }
-            else
-            {
-                Console.WriteLine("AutoUpdate: no update found.");
-            }
+
+            //}
+            //else
+            //{
+            //    Console.WriteLine("AutoUpdate: no update found.");
+            //}
 
             //// Publish
             //if (await au.PublishAvailableAsync())
@@ -105,3 +105,4 @@ namespace OtherNamedConsole
     }
 
 }
+

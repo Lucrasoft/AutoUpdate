@@ -2,6 +2,8 @@
 using AutoUpdate.Package;
 using AutoUpdate.Provider;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,6 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace AutoUpdate
@@ -33,6 +36,7 @@ namespace AutoUpdate
         private readonly IPackage package;
         private readonly ILogger logger;
         private readonly PrepareHandler prepare;
+        private readonly AppSettingsHandler appSettingsHandler;
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum updateType, HttpClient client, ILogger logger)
         {
@@ -49,6 +53,7 @@ namespace AutoUpdate
             VersionFile = $"{FolderPath}/../{FILENAME}";
             Versions = JsonHelper.Read<PackageVersionsObject>(VersionFile);
             prepare = new PrepareHandler(FolderPath, logger);
+            appSettingsHandler = new AppSettingsHandler(FolderPath);
         }
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue=null)
@@ -120,7 +125,7 @@ namespace AutoUpdate
             // TODO: Set into Memory (now set file into temp folder)
             var archive = new ZipArchive(new MemoryStream(package));
             foreach (ZipArchiveEntry entry in archive.Entries) 
-                if (entry.Name == exename) 
+                if (entry.Name == exename) // if (entry.Name.EndsWith(".exe"))
                     entry.ExtractToFile(remoteExe, true);
 
             // check zip version == exe version
@@ -146,13 +151,21 @@ namespace AutoUpdate
                 _ => throw new MissingMemberException($"Failed not found {PackageUpdateType}"),
             };
 
+            // handle special cases
+            (var newFilename, var newContent) = appSettingsHandler.GetFromArchive(archive);
+
             // save path
             PackageUtils.ExtractArchive(archive, FolderPath, onDownloadProgress);
 
+            // set special cases file
+            appSettingsHandler.SetFile($"{FolderPath}/{newFilename}", newContent);
+
+            // save return
             SaveVersion(oldVersion);
             return true;
         }
-        
+
+
         private void SaveVersion(string version)
         {
             Versions.Versions.Add(version);
