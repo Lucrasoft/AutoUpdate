@@ -80,8 +80,6 @@ namespace AutoUpdate
         {
             File.WriteAllText(filename, data.ToString());
         }
-
-
-
+    
     }
 }

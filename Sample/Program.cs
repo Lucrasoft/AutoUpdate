@@ -12,10 +12,11 @@ namespace OtherNamedConsole
 
         static async Task<int> Main(string[] args)
         {
+            #region Chunk
             //var serviceCollection = new ServiceCollection();
             //ConfigureServices(serviceCollection);
             // var serviceProvider = serviceCollection.BuildServiceProvider();
-            
+
             //Console.WriteLine("Hello World! From a branch");
 
             //#region generate AutoUpdate (output: au)
@@ -48,15 +49,7 @@ namespace OtherNamedConsole
             //////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.txt");
             //////auBuilder.RemoteVersion(@"C:\Users\n.tuytel\Resources\AutoUpdate\Sample\bin\Debug\net5.0\samples\sample1\version.json");
 
-
-
-            //var au = auBuilder.Build();
-            ////#endregion
-            //////Update
-            ////if (await au.UpdateAvailableAsync())
-            ////{
-            ////    Console.WriteLine("AutoUpdate: found new version. Updating...");
-            ///
+            #endregion
 
             var tcWebsite = "teamcity.lucrasoft.nl";
             var tcToken = "eyJ0eXAiOiAiVENWMiJ9.YVJLb0dsLV8xQ3pCdXo1dEZDa3JZUXZYaVdz.YWM3YmI4NTEtY2M3Ni00NDk0LTg0ZmUtZTk3ZmU3MDFhZWNi";
@@ -66,23 +59,26 @@ namespace OtherNamedConsole
                 .AddTeamCity(tcWebsite, tcToken, tcBuildTypeID)
                 .Build();
 
-            var result = await au.Update();
-            if (result == 0)
+            //Update
+            if (await au.UpdateAvailableAsync())
             {
-                return au.Restart();
-            }
+                Console.WriteLine("AutoUpdate: found new version. Updating...");
 
-            //}
-            //else
-            //{
-            //    Console.WriteLine("AutoUpdate: no update found.");
-            //}
+                var result = await au.Update();
+                if (result == 0)
+                {
+                    return au.Restart();
+                }
+            }
+            else
+            {
+                Console.WriteLine("AutoUpdate: no update found.");
+            }
 
             //// Publish
             //if (await au.PublishAvailableAsync())
             //{
             //    Console.WriteLine("AutoUpdate: has newer version. publishing...");
-
             //    await au.Publish();
             //}
             //else
@@ -91,15 +87,6 @@ namespace OtherNamedConsole
             //}
 
             return 0;
-        }
-
-
-
-
-
-        private static void ConfigureServices(IServiceCollection services)
-        {
-            //we will configure logging here
         }
 
     }
