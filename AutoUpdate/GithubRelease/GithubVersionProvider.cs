@@ -1,4 +1,6 @@
-﻿using Octokit;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +15,13 @@ namespace AutoUpdate.Provider
         private readonly string owner;
         private readonly string repo;
         private readonly GitHubClient client;
+        private readonly ILogger logger;
 
-        public GithubVersionProvider(string owner, string repo)
+        public GithubVersionProvider(string owner, string repo, ILogger logger)
         {
             this.owner = owner;
             this.repo = repo;
+            this.logger = logger;
 
             client = new GitHubClient(new ProductHeaderValue(repo));
             // TODO: extend limit call
@@ -40,7 +44,7 @@ namespace AutoUpdate.Provider
             }
             catch (Exception e)
             {
-                Console.WriteLine(
+                logger.LogError(
                     $"(GithubVersionProvider::GetVersionAsync) GitHubClient Exception \n" + 
                     $"[ERROR] Message:{e.Message}\n"
                 );

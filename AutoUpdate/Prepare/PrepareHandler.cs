@@ -1,5 +1,6 @@
 ﻿using AutoUpdate.Models;
 using AutoUpdate.Prepare;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,9 +28,12 @@ namespace AutoUpdate
 
         public string FolderPath { get; private set; }
 
-        public PrepareHandler(string path)
+        private readonly ILogger logger;
+
+        public PrepareHandler(string path, ILogger logger)
         {
             FolderPath = path;
+            this.logger = logger;
         }
 
         public int RunPreAndPostInstall(bool hasTimeThreshold=true)
@@ -55,7 +59,7 @@ namespace AutoUpdate
                 var command = prepare.GetCommand(filename);
 
                 // run pre/build script before download
-                Console.WriteLine($"\n[Run script: {installName}] cmd:{command}");
+                logger.LogInformation($"[Run script: {installName}] cmd:{command}");
                 exitCode = ExecuteCommand(command, hasTimeThreshold);
                 if (exitCode != 0) return exitCode;
             }
@@ -86,7 +90,7 @@ namespace AutoUpdate
             return null;
         }
 
-        private static int ExecuteCommand(string command, bool hasTimeThreshold)
+        private int ExecuteCommand(string command, bool hasTimeThreshold)
         {
             var processInfo = new ProcessStartInfo("cmd.exe", "/c " + command)
             {
@@ -101,8 +105,8 @@ namespace AutoUpdate
             {
                 if(!process.WaitForExit(ERROR_TIME_THRESHOLD))
                 {
-                    Console.WriteLine($"error >> Execution takes to long exception called.");
-                    Console.WriteLine($"exitcode >> {ERROR_TIME_EXITCODE}");
+                    logger.LogInformation($"error >> Execution takes to long exception called.");
+                    logger.LogInformation($"exitcode >> {ERROR_TIME_EXITCODE}");
                     return ERROR_TIME_EXITCODE;
                 }
             }
@@ -118,9 +122,9 @@ namespace AutoUpdate
             var exitCode = process.ExitCode;
 
             // log responses
-            if (!string.IsNullOrEmpty(output)) Console.Write($"output >> {output}");
-            if (!string.IsNullOrEmpty(error)) Console.Write($"error >> {error}");
-            Console.WriteLine($"exitcode >> {exitCode}\n");
+            if (!string.IsNullOrEmpty(output)) logger.LogInformation($"output >> {output}");
+            if (!string.IsNullOrEmpty(error)) logger.LogInformation($"error >> {error}");
+            logger.LogInformation($"exitcode >> {exitCode}\n");
 
             process.Close();
             return exitCode;
@@ -141,6 +145,6 @@ namespace AutoUpdate
 
             return null;
         }
-
     }
+
 }

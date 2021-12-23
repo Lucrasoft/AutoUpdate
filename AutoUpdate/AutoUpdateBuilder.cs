@@ -7,7 +7,8 @@ using AutoUpdate.TeamCity;
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using FluentTc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Octokit;
@@ -27,23 +28,31 @@ namespace AutoUpdate
     public class AutoUpdateBuilder
     {
         private HttpClient httpClient;
-        private PackageUpdateEnum packageUpdateType = PackageUpdateEnum.InPlace;
+        private PackageUpdateEnum updateType = PackageUpdateEnum.InPlace;
         private IVersionProvider local;
         private IVersionProvider remote;
+        private ILogger logger = NullLogger.Instance;
         private IPackage package;
 
 
         public AutoUpdateBuilder()
+        { }
+
+        /// <summary>
+        /// Add logger to system
+        /// </summary>
+        /// <param name="logger">Used to log whole application with</param>
+        public AutoUpdateBuilder AddLogger(ILogger logger)
         {
-            //default version providers..
-            local = new LocalAssemblyVersionProvider();
+            this.logger = logger;
+            return this;
         }
 
         /// <summary>
         /// Set HttpClient than the whole application contains the same configurations.
         /// </summary>
         /// <param name="client">The HttpClient that will been used globally</param>
-        public AutoUpdateBuilder SetHttpClient(HttpClient client)
+        public AutoUpdateBuilder AddHttpClient(HttpClient client)
         {
             httpClient = client;
             return this;
@@ -53,17 +62,17 @@ namespace AutoUpdate
         /// The type of update would infect the way of how the new versions are downloaded.<br/>
         /// </summary>
         /// <param name="type">The way how to download new releases</param>
-        public AutoUpdateBuilder SetPackageUpdateType(PackageUpdateEnum type)
+        public AutoUpdateBuilder AddUpdateType(PackageUpdateEnum type)
         {
-            packageUpdateType = type;
+            updateType = type;
             return this;
         }
 
         /// <summary>
         /// Manually supply a local version
         /// </summary>
-        /// <param name="version"></param>
-        public AutoUpdateBuilder LocalVersion(Version version)
+        /// <param name="version">Local defined version</param>
+        public AutoUpdateBuilder AddLocalVersion(Version version)
         {
             this.local = new CustomVersionProvider(version);
             return this;
@@ -72,8 +81,8 @@ namespace AutoUpdate
         /// <summary>
         /// A file containing the version information
         /// </summary>
-        /// <param name="filename"></param>
-        public AutoUpdateBuilder LocalVersion(string filename)
+        /// <param name="filename">Local defined version</param>
+        public AutoUpdateBuilder AddLocalVersion(string filename)
         {
             this.local = new FileVersionProvider(filename);
             return this;
@@ -82,8 +91,8 @@ namespace AutoUpdate
         /// <summary>
         /// Manully supply a remote version.
         /// </summary>
-        /// <param name="version"></param>
-        public AutoUpdateBuilder RemoteVersion(Version version)
+        /// <param name="version">Remote defined version</param>
+        public AutoUpdateBuilder AddRemoteVersion(Version version)
         {
             this.remote = new CustomVersionProvider(version);
             return this;
@@ -92,8 +101,8 @@ namespace AutoUpdate
         /// <summary>
         /// A file containing the version information.
         /// </summary>
-        /// <param name="filename"></param>
-        public AutoUpdateBuilder RemoteVersion(string filename)
+        /// <param name="filename">Remote defined version</param>
+        public AutoUpdateBuilder AddRemoteVersion(string filename)
         {
             this.remote = new FileVersionProvider(filename);
             return this;
@@ -102,8 +111,8 @@ namespace AutoUpdate
         /// <summary>
         /// A HTTP URI which returns the version information
         /// </summary>
-        /// <param name="url"></param>
-        public AutoUpdateBuilder RemoteVersion(Uri url)
+        /// <param name="url">Remote defined version</param>
+        public AutoUpdateBuilder AddRemoteVersion(Uri url)
         {
             this.remote = new UrlVersionProvider(url);
             return this;
@@ -112,7 +121,7 @@ namespace AutoUpdate
         /// <summary>
         /// Provide a HTTP URI which contents should contain a zip archive.
         /// </summary>
-        /// <param name="url"></param>
+        /// <param name="url">Uri url</param>
         public AutoUpdateBuilder AddPackage(Uri url)
         {
             package = new DownloadPackage(url);
@@ -122,10 +131,10 @@ namespace AutoUpdate
         /// <summary>
         /// Provide a version-controlled HTTP URI. The URI should give back a zip archive as content.
         /// </summary>
-        /// <param name="UrlFunction"></param>
-        public AutoUpdateBuilder AddPackage(Func<Version, Uri> UrlFunction) 
+        /// <param name="UrlFunc">Url function to define url</param>
+        public AutoUpdateBuilder AddPackage(Func<Version, Uri> UrlFunc) 
         {
-            package = new DownloadPackage(UrlFunction);
+            package = new DownloadPackage(UrlFunc);
             return this;
         }
 
@@ -156,8 +165,23 @@ namespace AutoUpdate
         /// <param name="container">Blob container name.</param>
         public AutoUpdateBuilder AddBlobStorage(string connectionString, string container)
         {
-            var blobServiceClient = new BlobServiceClient(connectionString);
+            BlobServiceClient blobServiceClient;
+            try
+            {
+                blobServiceClient = new BlobServiceClient(connectionString);
+            }
+            catch (FormatException)
+            {
+                throw new FormatException(
+                    $"Correct connectionString format will be: 'DefaultEndpointsProtocol=...;AccountName=...;AccountKey=...;EndpointSuffix=..."
+                );
+            }
+
             var containerClient = blobServiceClient.GetBlobContainerClient(container);
+            if(!containerClient.Exists())
+            {
+                throw new ArgumentException($"Container: {container} does not exist. in given blob storage account");
+            }
 
             remote = new BlobStorageVersionProvider(containerClient);
             package = new BlobStoragePackage(containerClient);
@@ -184,7 +208,7 @@ namespace AutoUpdate
 
             var owner = urlpaths[0];
             var repo = urlpaths[1];
-            remote = new GithubVersionProvider(owner, repo);
+            remote = new GithubVersionProvider(owner, repo, logger);
             package = new GithubPackage(owner, repo);
 
             return this;
@@ -196,10 +220,13 @@ namespace AutoUpdate
         /// <param name="website">The TeamCity domain (sample: "teamcity.website.nl")</param>
         /// <param name="token">The token to access project in TeamCity.</param>
         /// <param name="buildTypeId">Chosen type of build to use</param>
-        public AutoUpdateBuilder AddTeamCity(string website, string token , string buildTypeId) 
+        public AutoUpdateBuilder AddTeamCity(string website, string token, string buildTypeId) 
         {
-            remote = new TeamCityVersionProvider(website, token, buildTypeId);
-            package = new TeamCityPackage(website, token, buildTypeId);
+            // Exceptions: when http call failed.
+            var client = new TeamCityApi(website, token, buildTypeId);
+
+            remote = new TeamCityVersionProvider(client);
+            package = new TeamCityPackage(client);
 
             return this;
         }
@@ -215,7 +242,21 @@ namespace AutoUpdate
                 throw new ArgumentNullException("You must specifiy a remote version provider .");
             }
 
-            return new Updater(local, remote, package, packageUpdateType, httpClient);
+            // default local version provider..
+            if(local == null)
+            {
+                local = new LocalAssemblyVersionProvider(logger);
+            }
+
+            // warn on logger asigned
+            if(logger == NullLogger.Instance)
+            {
+                Console.WriteLine(
+                    "[INFO] AutoUpdate Logs are prevented. (add: .AddLogger(ILogger) to enable)"
+                );
+            }
+
+            return new Updater(local, remote, package, updateType, httpClient, logger);
         }
 
     }
