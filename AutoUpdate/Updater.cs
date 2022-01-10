@@ -146,7 +146,7 @@ namespace AutoUpdate
             // set files
             FolderPath = PackageUpdateType switch
             {
-                PackageUpdateEnum.SideBySide => $"{FolderPath}/../{newVersion}",
+                PackageUpdateEnum.SideBySide => $"{FolderPath}/{newVersion}",
                 PackageUpdateEnum.InPlace    => $"{FolderPath}",
                 _ => throw new MissingMemberException($"Failed not found {PackageUpdateType}"),
             };
