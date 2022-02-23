@@ -37,7 +37,7 @@ namespace AutoUpdate.DependencyInjection
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
-        public AutoUpdateBuilder(ILogger logger, IConfiguration configuration)
+        public AutoUpdateBuilder(ILogger<AutoUpdateBuilder> logger, IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
