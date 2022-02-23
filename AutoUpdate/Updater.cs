@@ -275,7 +275,7 @@ namespace AutoUpdate
 
         public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
 
-        public async Task UpdateProvider(Func<bool, int, Task> action, bool inDevMode = false)
+        public async Task Execute(Func<bool, int, Task> response, bool inDevMode = false)
         {
             if (inDevMode)
             {
@@ -299,7 +299,7 @@ namespace AutoUpdate
                 exitCode = 0;
             }
 
-            await action(updatable, exitCode);
+            await response(updatable, exitCode);
         }
     }
 }

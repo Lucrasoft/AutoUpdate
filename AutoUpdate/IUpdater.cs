@@ -64,7 +64,7 @@ namespace AutoUpdate
         /// <param name="action">response after updating</param>
         /// <param name="inDevMode">disable updating by settings it to development mode</param>
         /// <returns></returns>
-        public Task UpdateProvider(Func<bool, int, Task> action, bool inDevMode = false);
+        public Task Execute(Func<bool, int, Task> action, bool inDevMode = false);
 
     }
 }
