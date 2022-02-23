@@ -275,7 +275,7 @@ namespace AutoUpdate
 
         public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
 
-        public async Task UpdateProvider(Action<bool, int> action, bool inDevMode = false)
+        public async Task UpdateProvider(Func<bool, int, Task> action, bool inDevMode = false)
         {
             if (inDevMode)
             {
