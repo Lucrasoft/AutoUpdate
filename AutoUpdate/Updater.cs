@@ -299,7 +299,7 @@ namespace AutoUpdate
                 exitCode = 0;
             }
 
-            action(updatable, exitCode);
+            await action(updatable, exitCode);
         }
     }
 }
