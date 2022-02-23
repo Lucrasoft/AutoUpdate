@@ -275,5 +275,31 @@ namespace AutoUpdate
 
         public async Task<Version> GetRemoteVersion() => await remote.GetVersionAsync();
 
+        public async Task UpdateProvider(Action<bool, int> action, bool inDevMode = false)
+        {
+            if (inDevMode)
+            {
+                logger.LogWarning("AutoUpdate: In Development mode, disabled Updating!");
+            }
+
+            var exitCode = 0;
+            var updatable = !inDevMode && await UpdateAvailableAsync();
+            if (updatable)
+            {
+                logger.LogInformation("AutoUpdate: found new version. Updating...");
+                exitCode = await Update();
+                if (exitCode == 0)
+                {
+                    exitCode = Restart();
+                }
+            }
+            else
+            {
+                logger.LogInformation("AutoUpdate: no update found.");
+                exitCode = 0;
+            }
+
+            action(updatable, exitCode);
+        }
     }
 }
