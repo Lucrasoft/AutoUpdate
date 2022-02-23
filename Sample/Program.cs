@@ -1,7 +1,10 @@
 ﻿using AutoUpdate;
 using AutoUpdate.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -87,7 +90,9 @@ namespace OtherNamedConsole
             //}
 
             return 0;
+
         }
+
 
     }
 

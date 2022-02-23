@@ -17,6 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="samples\appsettings_new.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="samples\appsettings_old.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="samples\build-exe\build-install.deps.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
