@@ -58,5 +58,13 @@ namespace AutoUpdate
         /// <returns></returns>
         public Task<Version> GetRemoteVersion();
 
+        /// <summary>
+        /// Update version provider made it less code on the client.
+        /// </summary>
+        /// <param name="action">response after updating</param>
+        /// <param name="inDevMode">disable updating by settings it to development mode</param>
+        /// <returns></returns>
+        public Task UpdateProvider(Action<bool, int> action, bool inDevMode = false);
+
     }
 }
