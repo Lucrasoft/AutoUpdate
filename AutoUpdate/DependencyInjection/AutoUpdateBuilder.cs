@@ -215,7 +215,7 @@ namespace AutoUpdate.DependencyInjection
                 );
             }
 
-            return new Updater(local, remote, package, updateType, httpClient, logger);
+            return new Updater(local, remote, package, updateType, httpClient, _logger);
         }
 
     }

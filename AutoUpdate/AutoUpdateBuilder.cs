@@ -31,7 +31,7 @@ namespace AutoUpdate
         private PackageUpdateEnum updateType = PackageUpdateEnum.InPlace;
         private IVersionProvider local;
         private IVersionProvider remote;
-        private ILogger logger = NullLogger.Instance;
+        private ILogger _logger = NullLogger.Instance;
         private IPackage package;
 
 
@@ -44,7 +44,7 @@ namespace AutoUpdate
         /// <param name="logger">Used to log whole application with</param>
         public AutoUpdateBuilder AddLogger(ILogger logger)
         {
-            this.logger = logger;
+            _logger = logger;
             return this;
         }
 
@@ -208,7 +208,7 @@ namespace AutoUpdate
 
             var owner = urlpaths[0];
             var repo = urlpaths[1];
-            remote = new GithubVersionProvider(owner, repo, logger);
+            remote = new GithubVersionProvider(owner, repo, _logger);
             package = new GithubPackage(owner, repo);
 
             return this;
@@ -245,18 +245,18 @@ namespace AutoUpdate
             // default local version provider..
             if(local == null)
             {
-                local = new LocalAssemblyVersionProvider(logger);
+                local = new LocalAssemblyVersionProvider(_logger);
             }
 
             // warn on logger asigned
-            if(logger == NullLogger.Instance)
+            if(_logger == NullLogger.Instance)
             {
                 Console.WriteLine(
                     "[INFO] AutoUpdate Logs are prevented. (add: .AddLogger(ILogger) to enable)"
                 );
             }
 
-            return new Updater(local, remote, package, updateType, httpClient, logger);
+            return new Updater(local, remote, package, updateType, httpClient, _logger);
         }
 
     }
