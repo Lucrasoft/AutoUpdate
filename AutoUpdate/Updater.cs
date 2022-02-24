@@ -173,16 +173,25 @@ namespace AutoUpdate
             };
 
             // handle special cases
-            (var newFilename, var newContent) = appSettingsHandler.GetFromArchive(archive, _ignoredFilenames);
+            try
+            {
+                (var newFilename, var newContent) = appSettingsHandler.GetFromArchive(archive, _ignoredFilenames, logger);
 
-            // save path
-            PackageUtils.ExtractArchive(archive, FolderPath, onDownloadProgress);
+                // save path
+                PackageUtils.ExtractArchive(archive, FolderPath, onDownloadProgress);
 
-            // set special cases file
-            appSettingsHandler.SetFile($"{FolderPath}/{newFilename}", newContent);
+                // set special cases file
+                appSettingsHandler.SetFile($"{FolderPath}/{newFilename}", newContent);
 
-            // save return
-            SaveVersion(oldVersion);
+                // save return
+                SaveVersion(oldVersion);
+            }
+            catch (Exception ex)
+            {
+                logger.LogCritical(ex.Message);
+                throw;
+            }
+
             return true;
         }
 

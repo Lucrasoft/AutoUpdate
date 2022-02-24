@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace AutoUpdate
             _prevFolderPath = folderPath;
         }
 
-        public (string, JObject) GetFromArchive(ZipArchive archive, IEnumerable<string> filenames)
+        public (string, JObject) GetFromArchive(ZipArchive archive, IEnumerable<string> filenames, ILogger logger)
         {
             JObject currFile = null;
             string filename = null;
@@ -29,38 +30,40 @@ namespace AutoUpdate
                 // filter filename 
                 filename = entry.FullName;
                 var matches = filenames.Where(fname => filename.EndsWith(fname));
-                if (!matches.Any()) continue;
+                if (!matches.Any()) 
+                {
+                    continue;
+                }
 
-                //// read JSON current file
-                //using var sr = new StreamReader(entry.Open());
-                //using var r = new JsonTextReader(sr);
-                //currFile = (JObject)JToken.ReadFrom(r);
+                // read JSON current file
+                using var sr = new StreamReader(entry.Open());
+                using var r = new JsonTextReader(sr);
+                currFile = (JObject)JToken.ReadFrom(r);
 
-                //var prevFilename = $"{_prevFolderPath}/{filename}";
-                //if (!File.Exists(prevFilename))
-                //{
-                //    return (filename, currFile);
-                //}
+                var prevFilename = $"{_prevFolderPath}/{filename}";
+                if (!File.Exists(prevFilename))
+                {
+                    logger.LogCritical($"{prevFilename} is not been founded");
+                    return (filename, currFile);
+                }
 
-                //using var file2 = File.OpenText(prevFilename);
-                //using var reader2 = new JsonTextReader(file2);
-                //var prevFile = (JObject)JToken.ReadFrom(reader2);
+                using var file2 = File.OpenText(prevFilename);
+                using var reader2 = new JsonTextReader(file2);
+                var prevFile = (JObject)JToken.ReadFrom(reader2);
 
-                //// update NEW content with OLD data
-                //bool beenCalled = false;
-                //foreach (var x1 in currFile)
-                //{
-                //    foreach (var x2 in prevFile)
-                //    {
-                //        // keep old existing objects
-                //        if (x1.Key == x2.Key)
-                //        {
-                //            currFile[x1.Key] = x2.Value;
-                //            beenCalled = true;
-                //            break;
-                //        }
-                //    }
-                //}
+                // update NEW content with OLD data
+                foreach (var x1 in currFile)
+                {
+                    foreach (var x2 in prevFile)
+                    {
+                        // keep old existing objects
+                        if (x1.Key == x2.Key)
+                        {
+                            currFile[x1.Key] = x2.Value;
+                            break;
+                        }
+                    }
+                }
             }
 
             return (filename, currFile);
