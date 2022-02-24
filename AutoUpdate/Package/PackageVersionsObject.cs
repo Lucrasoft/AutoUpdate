@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio.Utilities;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace AutoUpdate.Package

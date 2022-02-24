@@ -28,12 +28,12 @@ namespace AutoUpdate
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 // filter filename 
-                filename = entry.FullName;
-                var matches = filenames.Where(fname => filename.EndsWith(fname));
+                var matches = filenames.Where(fname => fname.EndsWith(entry.FullName));
                 if (!matches.Any()) 
                 {
                     continue;
                 }
+                filename = entry.FullName;
 
                 // read JSON current file
                 using var sr = new StreamReader(entry.Open());
@@ -71,6 +71,9 @@ namespace AutoUpdate
 
         public void SetFile(string filename, JObject data)
         {
+            if (string.IsNullOrEmpty(filename)) return;
+            else if (data == null) return;
+
             File.WriteAllText(filename, data.ToString());
         }
     

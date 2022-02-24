@@ -2,7 +2,6 @@
 using AutoUpdate.Provider;
 using Azure.Storage.Blobs;
 using Newtonsoft.Json;
-using Octokit;
 using System;
 using System.Collections.Generic;
 using System.IO;

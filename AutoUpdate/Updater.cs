@@ -2,8 +2,6 @@ using AutoUpdate.Models;
 using AutoUpdate.Package;
 using AutoUpdate.Provider;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -188,7 +186,7 @@ namespace AutoUpdate
             }
             catch (Exception ex)
             {
-                logger.LogCritical(ex.Message);
+                logger.LogCritical($"AutoUpdate: Save new version ERROR: {ex.Message}");
                 throw;
             }
 
