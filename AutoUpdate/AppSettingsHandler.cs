@@ -19,7 +19,7 @@ namespace AutoUpdate
             _prevFolderPath = folderPath;
         }
 
-        public (string, JObject) GetFromArchive(ZipArchive archive)
+        public (string, JObject) GetFromArchive(ZipArchive archive, IEnumerable<string> filenames)
         {
             JObject currFile = null;
             string filename = null;
@@ -27,7 +27,9 @@ namespace AutoUpdate
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 // filter filename 
-                if (!entry.FullName.EndsWith("appsettings.json")) continue;
+                var matches = filenames.Where(filename => entry.FullName.EndsWith(filename));
+                if (!matches.Any()) continue;
+
                 filename = entry.FullName;
 
                 // read JSON current file
@@ -60,9 +62,6 @@ namespace AutoUpdate
                         }
                     }
                 }
-
-                // skip rest of files
-                if (beenCalled) break;
             }
 
             return (filename, currFile);

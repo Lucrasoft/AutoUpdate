@@ -28,6 +28,7 @@ namespace AutoUpdate.DependencyInjection
     /// </summary>
     public class AutoUpdateBuilder : IAutoUpdateBuilder
     {
+        private List<string> _ignoredFilenames = new();
         private HttpClient httpClient;
         private PackageUpdateEnum updateType = PackageUpdateEnum.InPlace;
         private IVersionProvider local;
@@ -37,10 +38,26 @@ namespace AutoUpdate.DependencyInjection
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
+
         public AutoUpdateBuilder(ILogger<AutoUpdateBuilder> logger, IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
+        }
+
+        public AutoUpdateBuilder AddIgnoringJsonFile(string filename)
+        {
+            if (string.IsNullOrEmpty(filename) || !filename.EndsWith(".json"))
+            {
+                throw new MissingFieldException($"Failed adding ignored Json file: {filename}");
+            }
+            else if (!File.Exists(filename))
+            {
+                throw new Exception($"File can't been found. {filename}");
+            }
+
+            _ignoredFilenames.Add(filename);
+            return this;
         }
 
         public AutoUpdateBuilder AddHttpClient(HttpClient client)
@@ -215,7 +232,7 @@ namespace AutoUpdate.DependencyInjection
                 );
             }
 
-            return new Updater(local, remote, package, updateType, httpClient, _logger);
+            return new Updater(local, remote, package, updateType, httpClient, _logger, _ignoredFilenames);
         }
 
     }

@@ -37,6 +37,7 @@ namespace AutoUpdate
         private readonly ILogger logger;
         private readonly PrepareHandler prepare;
         private readonly AppSettingsHandler appSettingsHandler;
+        private readonly IEnumerable<string> _ignoredFilenames;
 
         public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum updateType, HttpClient client, ILogger logger)
         {
@@ -55,6 +56,26 @@ namespace AutoUpdate
             prepare = new PrepareHandler(FolderPath, logger);
             appSettingsHandler = new AppSettingsHandler(FolderPath);
         }
+
+        public Updater(IVersionProvider local, IVersionProvider remote, IPackage package, PackageUpdateEnum updateType, HttpClient client, ILogger logger, IEnumerable<string> ignoringFilenames)
+        {
+            this.local = local;
+            this.remote = remote;
+            this.package = package;
+            PackageUpdateType = updateType;
+            HTTPClient = client ?? new();
+            this.logger = logger;
+            _ignoredFilenames = ignoringFilenames;
+
+            var exe = Process.GetCurrentProcess().MainModule.FileName;
+            FolderPath = Path.GetDirectoryName(exe);
+
+            VersionFile = $"{FolderPath}/../{FILENAME}";
+            Versions = JsonHelper.Read<PackageVersionsObject>(VersionFile);
+            prepare = new PrepareHandler(FolderPath, logger);
+            appSettingsHandler = new AppSettingsHandler(FolderPath);
+        }
+
 
         public async Task<bool> UpdateAvailableAsync(Func<Version, Version, bool> updateMessageContinue=null)
         {
@@ -152,7 +173,7 @@ namespace AutoUpdate
             };
 
             // handle special cases
-            (var newFilename, var newContent) = appSettingsHandler.GetFromArchive(archive);
+            (var newFilename, var newContent) = appSettingsHandler.GetFromArchive(archive, _ignoredFilenames);
 
             // save path
             PackageUtils.ExtractArchive(archive, FolderPath, onDownloadProgress);
@@ -301,5 +322,6 @@ namespace AutoUpdate
 
             await response(updatable, exitCode);
         }
+
     }
 }

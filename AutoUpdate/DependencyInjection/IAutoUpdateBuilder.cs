@@ -7,6 +7,13 @@ namespace AutoUpdate.DependencyInjection
     public interface IAutoUpdateBuilder
     {
         /// <summary>
+        /// Files that will been replaced and keep the old values with the same key value.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        AutoUpdateBuilder AddIgnoringJsonFile(string filename);
+
+        /// <summary>
         /// Provide the url of the azure blob storage.
         /// </summary>
         AutoUpdateBuilder AddBlobStorage();
