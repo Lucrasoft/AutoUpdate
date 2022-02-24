@@ -27,41 +27,40 @@ namespace AutoUpdate
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 // filter filename 
-                var matches = filenames.Where(filename => entry.FullName.EndsWith(filename));
+                filename = entry.FullName;
+                var matches = filenames.Where(fname => filename.EndsWith(fname));
                 if (!matches.Any()) continue;
 
-                filename = entry.FullName;
+                //// read JSON current file
+                //using var sr = new StreamReader(entry.Open());
+                //using var r = new JsonTextReader(sr);
+                //currFile = (JObject)JToken.ReadFrom(r);
 
-                // read JSON current file
-                using var sr = new StreamReader(entry.Open());
-                using var r = new JsonTextReader(sr);
-                currFile = (JObject)JToken.ReadFrom(r);
+                //var prevFilename = $"{_prevFolderPath}/{filename}";
+                //if (!File.Exists(prevFilename))
+                //{
+                //    return (filename, currFile);
+                //}
 
-                var prevFilename = $"{_prevFolderPath}/{filename}";
-                if (!File.Exists(prevFilename))
-                {
-                    return (filename, currFile);
-                }
+                //using var file2 = File.OpenText(prevFilename);
+                //using var reader2 = new JsonTextReader(file2);
+                //var prevFile = (JObject)JToken.ReadFrom(reader2);
 
-                using var file2 = File.OpenText(prevFilename);
-                using var reader2 = new JsonTextReader(file2);
-                var prevFile = (JObject)JToken.ReadFrom(reader2);
-
-                // update NEW content with OLD data
-                bool beenCalled = false;
-                foreach (var x1 in currFile)
-                {
-                    foreach (var x2 in prevFile)
-                    {
-                        // keep old existing objects
-                        if (x1.Key == x2.Key)
-                        {
-                            currFile[x1.Key] = x2.Value;
-                            beenCalled = true;
-                            break;
-                        }
-                    }
-                }
+                //// update NEW content with OLD data
+                //bool beenCalled = false;
+                //foreach (var x1 in currFile)
+                //{
+                //    foreach (var x2 in prevFile)
+                //    {
+                //        // keep old existing objects
+                //        if (x1.Key == x2.Key)
+                //        {
+                //            currFile[x1.Key] = x2.Value;
+                //            beenCalled = true;
+                //            break;
+                //        }
+                //    }
+                //}
             }
 
             return (filename, currFile);
