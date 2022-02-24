@@ -33,5 +33,5 @@ jobs:
     - name: Pack
       run: dotnet pack -c Release -p:PackageVersion=${{env.VERSION}}
     - name: Release Nuget
-      run: dotnet nuget push D:\a\AutoUpdate\AutoUpdate\AutoUpdate\bin\Release\Lucrasoft*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols true
+      run: dotnet nuget push **\Lucrasoft*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols true
       
