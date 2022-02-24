@@ -30,18 +30,16 @@ namespace AutoUpdate.DependencyInjection
     {
         private List<string> _ignoredFilenames = new();
         private HttpClient httpClient;
+        private ILogger _logger = NullLogger.Instance;
         private PackageUpdateEnum updateType = PackageUpdateEnum.InPlace;
         private IVersionProvider local;
         private IVersionProvider remote;
         private IPackage package;
 
-        private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
-
-        public AutoUpdateBuilder(ILogger<AutoUpdateBuilder> logger, IConfiguration configuration)
+        public AutoUpdateBuilder(IConfiguration configuration)
         {
-            _logger = logger;
             _configuration = configuration;
         }
 
@@ -57,6 +55,12 @@ namespace AutoUpdate.DependencyInjection
             }
 
             _ignoredFilenames.Add(filename);
+            return this;
+        }
+
+        public AutoUpdateBuilder AddLogger(ILogger logger)
+        {
+            _logger = logger;
             return this;
         }
 

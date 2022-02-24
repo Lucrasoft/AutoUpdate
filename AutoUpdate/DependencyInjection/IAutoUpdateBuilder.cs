@@ -1,4 +1,5 @@
 ﻿using AutoUpdate.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
 
@@ -13,6 +14,12 @@ namespace AutoUpdate.DependencyInjection
         /// <returns></returns>
         AutoUpdateBuilder AddIgnoringJsonFile(string filename);
 
+        /// <summary>
+        /// Add logger to system
+        /// </summary>
+        /// <param name="logger">Used to log whole application with</param>
+        AutoUpdateBuilder AddLogger(ILogger logger);
+        
         /// <summary>
         /// Provide the url of the azure blob storage.
         /// </summary>
