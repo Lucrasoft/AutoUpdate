@@ -314,7 +314,9 @@ namespace AutoUpdate
             var updatable = !inDevMode && await UpdateAvailableAsync();
             if (updatable)
             {
-                logger.LogInformation("AutoUpdate: found new version. Updating...");
+                var version = await GetRemoteVersion();
+                logger.LogInformation($"AutoUpdate: found new version {version}, Updating...");
+
                 exitCode = await Update();
                 if (exitCode == 0)
                 {
