@@ -305,6 +305,10 @@ namespace AutoUpdate
 
         public async Task Execute(Func<bool, int, Task> response, bool inDevMode = false)
         {
+            // Current running version
+            var currentVersion = await GetLocalVersion();
+            logger.LogInformation($"AutoUpdate [version]: {currentVersion}");
+
             if (inDevMode)
             {
                 logger.LogWarning("AutoUpdate: In Development mode, disabled Updating!");
